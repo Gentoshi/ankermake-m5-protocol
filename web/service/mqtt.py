@@ -1,15 +1,5 @@
 import logging as log
-
-from ..lib.service import Service
-from .. import app
-
-from libflagship.util import enhex
-
-import cli.mqtt
-
-
 import re
-import logging as log
 
 from ..lib.service import Service
 from .. import app
@@ -49,14 +39,12 @@ class MqttQueue(Service):
             except Exception:
                 pass
                 
-        # G1 E<len> - Extrusion Limits (Max 100mm per command)
-        elif cmd.startswith("G1 E"):
+        # G1 ... E<len> - Extrusion Limits (Max 100mm per command)
+        elif re.match(r'^G1\s', cmd):
             try:
-                # Find the E value, handling both E10 and E-10 (retract)
                 match = re.search(r'E(-?\d+)', cmd)
                 if match:
                     length = int(match.group(1))
-                    # Prevent unusually long generic extrusions or retractions
                     if length > 100:
                         log.warning(f"Blocked excessive extrusion length: {length}mm")
                         msg_dict["cmdData"] = cmd.replace(f"E{length}", "E100")
