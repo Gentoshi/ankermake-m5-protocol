@@ -257,6 +257,25 @@ $(function () {
         })();
     });
 
+    $("#scan-printer-btn").on("click", function () {
+        const btn = $(this).prop("disabled", true);
+        fetch("/api/ankerctl/config/updateip", {
+            method: "POST",
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            if (data.found) {
+                $("#printerIpInput").val(data.ip);
+                flash_message(`Found printer at ${data.ip}`, "success");
+            } else {
+                flash_message(data.message || "Printer not found", "warning");
+            }
+        })
+        .catch(() => flash_message("Scan failed", "danger"))
+        .finally(() => btn.prop("disabled", false));
+    });
+
     function flash_message(message, category) {
         // copy from base.html
         $(`<div class="alert alert-${category} alert-dismissible fade show" data-timeout="7500" role="alert">` +

@@ -96,29 +96,32 @@
                 </form>
 
                 {% if printer %}
-                <form
-                    action="{{ url_for('app_api_ankerctl_config_update_ip_addresses') }}"
-                    method="POST"
-                    class="mb-3"
-                    id="config-update-printer-ips"
-                    data-bs-toggle="modal" data-bs-target="#popupModal"
-                    data-msg="Detecting printer IP addresses..."
-                >
-                    <div class="card">
-                        <div class="card-header fs-4">
-                                Update Printer IP Addresses
+                <div class="card mb-3">
+                    <div class="card-header fs-4">
+                        Printer IP Address
+                    </div>
+                    <div class="card-body">
+                        <form id="config-set-printer-ip"
+                              action="{{ url_for('app_api_ankerctl_config_set_ip') }}"
+                              method="POST">
+                            <div class="input-group mb-3">
+                                <div class="input-group-text">IP Address</div>
+                                <input class="form-control" type="text"
+                                       id="printerIpInput" name="ip"
+                                       value="{{ printer.ip_addr or '' }}"
+                                       placeholder="e.g. 192.168.1.42" />
                             </div>
-                            <div class="card-body">
-                                <p>
-                                    Make sure your printers are connected to your Wifi and
-                                    are located in the same network as Ankerctl.
-                                </p>
-                                <button class="btn btn-secondary submit" type="submit">
-                                    {{ macro.bi_icon("arrow-clockwise", "Update Printer IP Addresses") }}
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-secondary" id="scan-printer-btn">
+                                    {{ macro.bi_icon("arrow-clockwise", "Scan for Printer") }}
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    {{ macro.bi_icon("check-lg", "Save") }}
                                 </button>
                             </div>
+                        </form>
                     </div>
-                </form>
+                </div>
                 {% endif %}
 
 
