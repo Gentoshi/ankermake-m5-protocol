@@ -166,7 +166,7 @@ $(function () {
      * @returns {number} percentage
      */
     function getPercentage(progress) {
-        return Math.round(((progress / 100) * 100) / 100);
+        return Math.round(progress);
     }
 
     /**
@@ -479,7 +479,7 @@ $(function () {
      */
     sockets.video = new AutoWebSocket({
         name: "Video socket",
-        url: `${location.protocol.replace('http', 'ws')}${location.host}/ws/video`,
+        url: `${location.protocol.replace('http', 'ws')}//${location.host}/ws/video`,
         badge: "#badge-video",
         binary: true,
 
@@ -518,7 +518,7 @@ $(function () {
 
     sockets.ctrl = new AutoWebSocket({
         name: "Control socket",
-        url: `${location.protocol.replace('http', 'ws')}${location.host}/ws/ctrl`,
+        url: `${location.protocol.replace('http', 'ws')}//${location.host}/ws/ctrl`,
         badge: "#badge-ctrl",
     });
 
@@ -682,7 +682,7 @@ $(function () {
                 };
                 break;
             case "set-nozzle-temp":
-                const clampedNozzle = Math.min(new_value_int, 260);
+                const clampedNozzle = Math.min(Math.max(new_value_int, 0), 260);
                 gcodeCMD = "M104 S" + clampedNozzle.toString();
                 logDebug(`Targeting Nozzle: ${gcodeCMD}`);
                 message_data = {
@@ -692,7 +692,7 @@ $(function () {
                 };
                 break;
             case "set-bed-temp":
-                const clampedBed = Math.min(new_value_int, 100);
+                const clampedBed = Math.min(Math.max(new_value_int, 0), 100);
                 gcodeCMD = "M140 S" + clampedBed.toString();
                 logDebug(`Targeting Bed: ${gcodeCMD}`);
                 message_data = {
