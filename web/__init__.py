@@ -76,6 +76,9 @@ def mqtt(sock):
     """
     if not app.config["login"]:
         return
+    mq = app.svc.svcs.get("mqttqueue")
+    online = mq.state == RunState.Running if mq else False
+    sock.send(json.dumps({"status": "connected" if online else "disconnected"}))
     for data in app.svc.stream("mqttqueue"):
         log.debug(f"MQTT message: {data}")
         sock.send(json.dumps(data))
