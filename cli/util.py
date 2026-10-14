@@ -1,7 +1,7 @@
 import sys
 import click
 import json
-from flask import make_response, abort
+from flask import abort
 
 
 def require_python_version(major, minor):
@@ -55,19 +55,18 @@ class FileSizeType(click.ParamType):
     def convert(self, value, param, ctx):
         value = value.lower().rstrip("b")
         try:
-            num = int(value[:-1])
             if value.endswith("k"):
-                return num * 1024**1
+                return int(value[:-1]) * 1024**1
             elif value.endswith("m"):
-                return num * 1024**2
+                return int(value[:-1]) * 1024**2
             elif value.endswith("g"):
-                return num * 1024**3
+                return int(value[:-1]) * 1024**3
             elif value.endswith("t"):
-                return num * 1024**4
+                return int(value[:-1]) * 1024**4
             else:
-                raise ValueError()
+                return int(value)
         except ValueError:
-            self.fail("Invalid file size: use {kb,gb,mb,tb} suffix (examples: 1337kb, 42mb, 17gb)", param, ctx)
+            self.fail("Invalid file size: use bare bytes or {kb,mb,gb,tb} suffix (examples: 1024, 1337kb, 42mb)", param, ctx)
 
 
 def parse_json(msg):
@@ -118,6 +117,4 @@ def parse_http_bool(str):
 
 
 def http_abort(code, message):
-    response = make_response(f"{message}")
-    response.status_code = code
-    abort(response)
+    abort(code, description=message)
