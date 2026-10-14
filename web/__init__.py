@@ -80,9 +80,7 @@ def mqtt(sock):
     online = mq.state == RunState.Running if mq else False
     sock.send(json.dumps({"status": "connected" if online else "disconnected"}))
     for data in app.svc.stream("mqttqueue"):
-        if isinstance(data, dict) and data.get("commandType") in (1008, 1001):
-            log.info(f"MQTT reply: {json.dumps(data)}")
-        log.debug(f"MQTT message: {data}")
+        log.info(f"MQTT: {json.dumps(data) if isinstance(data, (dict, list)) else data}")
         sock.send(json.dumps(data))
 
 

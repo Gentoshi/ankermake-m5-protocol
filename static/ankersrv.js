@@ -428,6 +428,12 @@ $(function () {
 
         message: function (ev) {
             const data = JSON.parse(ev.data);
+            if (data.commandType) {
+                const statEl = $("#system-status");
+                if (statEl.text() === "Offline") {
+                    statEl.text("Idle").removeClass("alert-secondary").addClass("alert-secondary");
+                }
+            }
             if (data.commandType == 1001) {
                 // Returns Print Details
                 $("#print-name").text(data.name);
