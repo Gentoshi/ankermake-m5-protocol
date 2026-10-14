@@ -5,7 +5,7 @@ $(function () {
     $("#copyYear").text(new Date().getFullYear());
 
     /**
-     * Poll service status and update the header badge
+     * Poll service status and update existing connection badges with health tooltips
      */
     function fmtDuration(s) {
         if (s == null) return "?";
@@ -14,41 +14,30 @@ $(function () {
         return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
     }
 
-    function updateSvcStatus() {
+    function updateSvcBadges() {
         fetch("/api/ankerctl/status")
         .then(r => r.json())
         .then(data => {
-            const el = $("#svc-status");
             const svcs = data.services || {};
-            const parts = [];
-            let allUp = true;
-            for (const [name, svc] of Object.entries(svcs)) {
+            const badgeMap = { pppp: "#badge-pppp", mqttqueue: "#badge-mqtt", videoqueue: "#badge-video" };
+            for (const [svcName, selector] of Object.entries(badgeMap)) {
+                const el = $(selector);
+                if (!el.length || !svcs[svcName]) continue;
+                const svc = svcs[svcName];
                 const h = svc.health;
-                if (!svc.online) {
-                    allUp = false;
-                    parts.push(`${name}: off`);
-                } else if (h && h.connected === false) {
-                    allUp = false;
-                    parts.push(`${name}: disconnected`);
-                } else if (h && h.last_msg_age != null && h.last_msg_age > 5) {
-                    allUp = false;
-                    parts.push(`${name}: stale (${h.last_msg_age.toFixed(0)}s)`);
-                } else if (h && h.uptime != null) {
-                    parts.push(`${name}: ${fmtDuration(h.uptime)}`);
-                } else {
-                    parts.push(`${name}: up`);
-                }
+                if (!h) continue;
+                let tip = `${svcName}: ${svc.online ? "running" : "stopped"}`;
+                if (h.uptime != null) tip += `, up ${fmtDuration(h.uptime)}`;
+                if (h.last_msg_age != null) tip += `, last pkt ${h.last_msg_age.toFixed(1)}s`;
+                if (h.last_frame_age != null) tip += `, last frame ${h.last_frame_age.toFixed(1)}s`;
+                if (h.disconnected_for != null) tip += `, disconnected ${fmtDuration(h.disconnected_for)}`;
+                el.attr("title", tip);
             }
-            const text = parts.join("  |  ") || "no services";
-            el.text(text);
-            el.attr("title", text);
-            el.removeClass("text-bg-success text-bg-warning text-bg-danger text-bg-secondary");
-            el.addClass(allUp ? "text-bg-success" : "text-bg-warning");
         })
         .catch(() => {});
     }
-    updateSvcStatus();
-    setInterval(updateSvcStatus, 5000);
+    updateSvcBadges();
+    setInterval(updateSvcBadges, 10000);
 
     /**
      * Handle modal for progress bar being shown
