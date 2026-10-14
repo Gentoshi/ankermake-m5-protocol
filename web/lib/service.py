@@ -368,8 +368,8 @@ class ServiceManager:
                             yield queue.get(timeout=timeout)
                         except Empty:
                             yield None
-        except (EOFError, OSError, ServiceStoppedError) as e:
-            log.exception(f"ServiceManager stream {name} handled error: {e}")
+        except (EOFError, OSError, ServiceStoppedError, TimeoutError) as e:
+            log.warning(f"ServiceManager stream {name}: {e}")
             return
         except Exception as e:
             log.exception(f"ServiceManager stream {name} fatal error: {e}")

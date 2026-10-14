@@ -93,6 +93,8 @@ class PPPPService(Service):
                 except StopIteration:
                     log.error("PPPPService stop iteration")
                     raise ConnectionRefusedError("Connection rejected by device")
+        except TimeoutError:
+            raise
         except Exception as e:
             hint = cli.pppp.pppp_network_error_hint(e)
             if hint:
