@@ -23,6 +23,19 @@ ALIVE_TIMEOUT = 5
 HEARTBEAT_INTERVAL = 60
 
 
+def _get_local_ip():
+    """Returns the local IP address used for outbound traffic, or 'unknown'."""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("10.255.255.255", 1))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "unknown"
+
+
 class PPPPService(Service):
 
     def worker_init(self):
@@ -83,7 +96,10 @@ class PPPPService(Service):
 
             while api.state != PPPPState.Connected:
                 if datetime.now() > deadline:
-                    log.error("PPPPService deadline exceeded")
+                    local_ip = _get_local_ip()
+                    log.warning(f"{self.name}: Connection timeout. "
+                                f"Local IP: {local_ip}, Printer IP: {printer.ip_addr}. "
+                                f"Verify both are on the same network and UDP port 32108 is not firewalled.")
                     raise TimeoutError("Connection timeout")
                 try:
                     msg = api.poll(timeout=0.1)
