@@ -531,6 +531,107 @@ def app_api_ankerctl_status() -> dict:
     }
 
 
+def send_printer_command(payload: dict):
+    """Send a command to the printer via MQTT. Returns (success, error)."""
+    mq = app.svc.svcs.get("mqttqueue")
+    if not mq or mq.state != RunState.Running:
+        return False, "MQTT service not running"
+    with app.svc.borrow("mqttqueue") as mq:
+        safe_payload = mq.validate_gcode_payload(payload)
+        log.info(f"Sending printer command: {json.dumps(safe_payload)}")
+        mq.client.command(safe_payload)
+    return True, None
+
+
+PRINT_CONTROL_VALUES = {"pause": 1, "resume": 2, "stop": 3}
+
+
+@app.post("/api/commands/print")
+def api_print_control():
+    data = request.get_json(force=True)
+    action = data.get("action", "").lower()
+    if action not in PRINT_CONTROL_VALUES:
+        return jsonify({"error": f"Invalid action. Use: {list(PRINT_CONTROL_VALUES.keys())}"}), 400
+    value = PRINT_CONTROL_VALUES[action]
+    log.info(f"Print control: {action} (value={value})")
+    ok, err = send_printer_command({"commandType": 1008, "value": value})
+    if err:
+        return jsonify({"error": err}), 503
+    return jsonify({"ok": True, "action": action, "value": value})
+
+
+@app.post("/api/commands/temperature")
+def api_set_temperature():
+    data = request.get_json(force=True)
+    results = {}
+    if "nozzle" in data:
+        temp = int(data["nozzle"])
+        if temp < 0 or temp > 300:
+            return jsonify({"error": "Nozzle temp must be 0-300"}), 400
+        ok, err = send_printer_command({"commandType": 1003, "value": temp * 100})
+        results["nozzle"] = {"ok": ok, "value": temp}
+        if err:
+            results["nozzle"]["error"] = err
+    if "hotbed" in data:
+        temp = int(data["hotbed"])
+        if temp < 0 or temp > 100:
+            return jsonify({"error": "Hotbed temp must be 0-100"}), 400
+        ok, err = send_printer_command({"commandType": 1004, "value": temp * 100})
+        results["hotbed"] = {"ok": ok, "value": temp}
+        if err:
+            results["hotbed"]["error"] = err
+    if not results:
+        return jsonify({"error": "Provide 'nozzle' and/or 'hotbed'"}), 400
+    return jsonify(results)
+
+
+@app.post("/api/commands/z-offset")
+def api_set_z_offset():
+    data = request.get_json(force=True)
+    value = data.get("value")
+    if value is None:
+        return jsonify({"error": "Provide 'value' (float, mm)"}), 400
+    value = float(value)
+    if value < -1.0 or value > 1.0:
+        return jsonify({"error": "Z-offset must be between -1.0 and 1.0 mm"}), 400
+    ok, err = send_printer_command({"commandType": 1021, "value": value})
+    if err:
+        return jsonify({"error": err}), 503
+    return jsonify({"ok": True, "value": value})
+
+
+@app.post("/api/commands/auto-level")
+def api_auto_level():
+    ok, err = send_printer_command({"commandType": 1007, "value": 1})
+    if err:
+        return jsonify({"error": err}), 503
+    return jsonify({"ok": True, "message": "Auto-leveling started"})
+
+
+@app.post("/api/commands/extrude")
+def api_extrude():
+    data = request.get_json(force=True)
+    length = int(data.get("length", 40))
+    direction = data.get("direction", "extrude")
+    if length < 1 or length > 200:
+        return jsonify({"error": "Length must be 1-200 mm"}), 400
+    if direction not in ("extrude", "retract"):
+        return jsonify({"error": "Direction must be 'extrude' or 'retract'"}), 400
+    value = length if direction == "extrude" else -length
+    ok, err = send_printer_command({"commandType": 1022, "value": value})
+    if err:
+        return jsonify({"error": err}), 503
+    return jsonify({"ok": True, "direction": direction, "length": length})
+
+
+@app.get("/api/files")
+def api_file_list():
+    ok, err = send_printer_command({"commandType": 1009, "value": 1})
+    if err:
+        return jsonify({"error": err}), 503
+    return jsonify({"ok": True, "message": "File list requested. Check /ws/mqtt for response."})
+
+
 def register_services(app):
     app.svc.register("pppp", web.service.pppp.PPPPService())
     if app.config["video_supported"]:

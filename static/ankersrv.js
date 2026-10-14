@@ -405,6 +405,15 @@ $(function () {
 
     let lastProgress = -1;
     let lastLayer = "";
+    let lastNotice = 0;
+
+    function showJobNotification(type) {
+        const fileName = $("#print-name").text() || "Print";
+        const msg = type === "completed" ? `"${fileName}" completed` : `"${fileName}" stopped`;
+        const el = $(`<div class="eufy-job-notification ${type}">${msg}</div>`);
+        $("body").append(el);
+        setTimeout(() => el.fadeOut(500, () => el.remove()), 8000);
+    }
 
     sockets.mqtt = new AutoWebSocket({
         name: "mqtt socket",
@@ -412,7 +421,7 @@ $(function () {
         badge: "#badge-mqtt",
 
         opened: function (event) {
-            ["#set-nozzle-temp", "#set-bed-temp", "#set-fan-speed", "#preheat-pla", "#preheat-petg", "#preheat-cooldown", "#extrude-btn", "#retract-btn"].forEach(function (elem_id) {
+            ["#set-nozzle-temp", "#set-bed-temp", "#set-fan-speed", "#preheat-pla", "#preheat-petg", "#preheat-cooldown", "#extrude-btn", "#retract-btn", "#btn-stop", "#btn-pause", "#btn-resume", "#z-offset-minus", "#z-offset-plus"].forEach(function (elem_id) {
                 $(elem_id)[0].disabled = false;
             });
         },
@@ -432,6 +441,9 @@ $(function () {
                 $("#progressbar").attr("aria-valuenow", progress);
                 $("#progressbar").attr("style", `width: ${progress}%`);
                 $("#progress").text(`${progress}%`);
+                if (data.filamentUsed) {
+                    $("#print-filament").text(`${data.filamentUsed}${data.filamentUnit || "mm"}`);
+                }
             } else if (data.commandType == 1003) {
                 // Returns Nozzle Temp
                 const current = getTemp(data.currentTemp);
@@ -439,6 +451,7 @@ $(function () {
                 if (Object.prototype.hasOwnProperty.call(data, "targetTemp")) {
                     const target = getTemp(data.targetTemp);
                     if (!isNaN(target)) {
+                        $("#nozzle-target").text(target);
                         $("#set-nozzle-temp").text(`${target}°C`);
                     }
                 }
@@ -449,6 +462,7 @@ $(function () {
                 if (Object.prototype.hasOwnProperty.call(data, "targetTemp")) {
                     const target = getTemp(data.targetTemp);
                     if (!isNaN(target)) {
+                        $("#bed-target").text(target);
                         $("#set-bed-temp").text(`${target}°C`);
                     }
                 }
@@ -497,6 +511,20 @@ $(function () {
                 else if (data.notice === 4 || data.notice === 5) statEl.addClass("alert-warning");
                 else statEl.addClass("alert-secondary");
 
+                // Update print status text + button visibility
+                $("#print-status-text").text(m === "Printing" ? "| Printing" : m === "Finished" ? "| Completed" : m === "Error state" ? "| Stopped" : "");
+                const isPrinting = data.notice === 1;
+                const isPaused = data.notice === 2 && lastNotice === 1;
+                $("#btn-pause").toggleClass("d-none", !isPrinting);
+                $("#btn-resume").toggleClass("d-none", isPrinting || data.notice !== 2);
+                $("#btn-stop").prop("disabled", data.notice === 0);
+
+                // Job completion detection
+                if (lastNotice === 1 && (data.notice === 2 || data.notice === 3)) {
+                    showJobNotification(data.notice === 2 ? "completed" : "stopped");
+                }
+                lastNotice = data.notice;
+
             } else if (data.commandType == 1007 || data.commandType == 1008 || data.commandType == 1009) {
                 // Silently sink high-frequency time elapsed/remaining broadcast loops to avoid Console flooding
             } else {
@@ -507,24 +535,31 @@ $(function () {
 
         close: function (ws) {
             $("#print-name").text("");
+            $("#print-status-text").text("");
             $("#time-elapsed").text("00:00:00");
             $("#time-remain").text("00:00:00");
             $("#progressbar").attr("aria-valuenow", 0);
             $("#progressbar").attr("style", "width: 0%");
             $("#progress").text("0%");
+            $("#print-filament").text("0mm");
             $("#nozzle-temp").text("0°C");
+            $("#nozzle-target").text("--");
             $("#set-nozzle-temp").text("0°C");
             $("#bed-temp").text("0°C");
+            $("#bed-target").text("--");
             $("#set-bed-temp").text("0°C");
             $("#print-speed").text("0mm/s");
             $("#print-layer").text("0 / 0");
             $("#fan-speed").text("0%");
             $("#set-fan-speed").text("0");
             $("#system-status").text("Offline").removeClass("alert-success alert-warning alert-danger alert-info").addClass("alert-secondary");
+            $("#btn-pause").addClass("d-none");
+            $("#btn-resume").addClass("d-none");
 
-            ["#set-nozzle-temp", "#set-bed-temp", "#set-fan-speed", "#preheat-pla", "#preheat-petg", "#preheat-cooldown", "#extrude-btn", "#retract-btn"].forEach(function (elem_id) {
+            ["#set-nozzle-temp", "#set-bed-temp", "#set-fan-speed", "#preheat-pla", "#preheat-petg", "#preheat-cooldown", "#extrude-btn", "#retract-btn", "#btn-stop", "#btn-pause", "#btn-resume", "#z-offset-minus", "#z-offset-plus"].forEach(function (elem_id) {
                 $(elem_id).get(0).disabled = true;
             });
+            lastNotice = 0;
         },
     });
 
@@ -572,10 +607,10 @@ $(function () {
 
     function setQualityBtn(mode) {
         const low = $("#quality-low"), high = $("#quality-high");
-        low.removeClass("btn-primary").addClass("btn-secondary opacity-75");
-        high.removeClass("btn-primary").addClass("btn-secondary opacity-75");
-        if (mode === 1) high.removeClass("btn-secondary opacity-75").addClass("btn-primary");
-        else if (mode === 0) low.removeClass("btn-secondary opacity-75").addClass("btn-primary");
+        low.removeClass("active");
+        high.removeClass("active");
+        if (mode === 1) high.addClass("active");
+        else if (mode === 0) low.addClass("active");
     }
 
     sockets.ctrl = new AutoWebSocket({
@@ -618,8 +653,8 @@ $(function () {
     $("#light-on").on("click", function () {
         logDebug("Command Dispatched: Light ON");
         sockets.ctrl.ws.send(JSON.stringify({ light: 1 }));
-        $("#light-on").removeClass("btn-secondary opacity-75").addClass("btn-primary");
-        $("#light-off").removeClass("btn-primary").addClass("btn-secondary opacity-75");
+        $("#light-on").addClass("active");
+        $("#light-off").removeClass("active");
         return false;
     });
 
@@ -629,8 +664,8 @@ $(function () {
     $("#light-off").on("click", function () {
         logDebug("Command Dispatched: Light OFF");
         sockets.ctrl.ws.send(JSON.stringify({ light: 0 }));
-        $("#light-off").removeClass("btn-secondary opacity-75").addClass("btn-primary");
-        $("#light-on").removeClass("btn-primary").addClass("btn-secondary opacity-75");
+        $("#light-off").addClass("active");
+        $("#light-on").removeClass("active");
         return false;
     });
 
@@ -850,7 +885,7 @@ $(function () {
             return false;
         }
 
-        const len = $("input[name='extrude-len']:checked").val();
+        const len = parseInt($("#extrude-length").val(), 10) || 40;
 
         const gcode1 = "M83";
         const message1 = {
@@ -873,6 +908,120 @@ $(function () {
         }, 500);
 
         return false;
+    });
+
+    // Update extrude handler to use #extrude-length input
+    $("#extrude-btn").off("click").on("click", function () {
+        const currentTempText = $("#nozzle-temp").text();
+        const currentTemp = parseInt(currentTempText, 10) || 0;
+
+        if (currentTemp < 180) {
+            logDebug(`Blocked Extrude: Nozzle currently ${currentTemp}°C (<180°C). Overriding with preheat M104 S200`);
+            const flash = $(`<div class="alert alert-warning alert-dismissible fade show" role="alert"><button type="button" class="btn-close btn-sm btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>Nozzle is too cold to extrude safely. Preparing to preheat to 200°C.</div>`);
+            $("#messages").append(flash);
+            setTimeout(() => flash.alert('close'), 7500);
+            sendNewValueViaMQTT("set-nozzle-temp", "200");
+            return false;
+        }
+
+        const len = parseInt($("#extrude-length").val(), 10) || 40;
+
+        const gcode1 = "M83";
+        const message1 = {
+            commandType: MqttMsgType.ZZ_MQTT_CMD_GCODE_COMMAND,
+            cmdData: gcode1,
+            cmdLen: gcode1.length,
+        };
+        logDebug(`Dispatched: ${gcode1}`);
+        sockets.ctrl.ws.send(JSON.stringify({ mqtt: message1 }));
+
+        setTimeout(() => {
+            const gcode2 = `G1 E${len} F300`;
+            const message2 = {
+                commandType: MqttMsgType.ZZ_MQTT_CMD_GCODE_COMMAND,
+                cmdData: gcode2,
+                cmdLen: gcode2.length,
+            };
+            logDebug(`Dispatched: ${gcode2}`);
+            sockets.ctrl.ws.send(JSON.stringify({ mqtt: message2 }));
+        }, 500);
+
+        return false;
+    });
+
+    // Print control buttons
+    $("#btn-pause").on("click", function () {
+        logDebug("Command Dispatched: PAUSE");
+        fetch("/api/commands/print", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "pause" })
+        }).then(r => r.json()).then(d => {
+            if (d.ok) logDebug("Pause sent");
+            else logDebug(`Pause error: ${d.error}`);
+        });
+        return false;
+    });
+
+    $("#btn-resume").on("click", function () {
+        logDebug("Command Dispatched: RESUME");
+        fetch("/api/commands/print", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "resume" })
+        }).then(r => r.json()).then(d => {
+            if (d.ok) logDebug("Resume sent");
+            else logDebug(`Resume error: ${d.error}`);
+        });
+        return false;
+    });
+
+    $("#btn-stop").on("click", function () {
+        if (!confirm("Stop the current print? This cannot be undone.")) return false;
+        logDebug("Command Dispatched: STOP");
+        fetch("/api/commands/print", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "stop" })
+        }).then(r => r.json()).then(d => {
+            if (d.ok) logDebug("Stop sent");
+            else logDebug(`Stop error: ${d.error}`);
+        });
+        return false;
+    });
+
+    // Z-Offset controls
+    function sendZOffset() {
+        const val = parseFloat($("#z-offset-value").val()) || 0;
+        logDebug(`Command Dispatched: Z-Offset ${val}mm`);
+        fetch("/api/commands/z-offset", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ value: val })
+        }).then(r => r.json()).then(d => {
+            if (d.ok) logDebug(`Z-Offset set to ${val}mm`);
+            else logDebug(`Z-Offset error: ${d.error}`);
+        });
+    }
+
+    $("#z-offset-minus").on("click", function () {
+        let val = (parseFloat($("#z-offset-value").val()) || 0) - 0.01;
+        val = Math.max(-1.0, Math.round(val * 100) / 100);
+        $("#z-offset-value").val(val.toFixed(2));
+        sendZOffset();
+        return false;
+    });
+
+    $("#z-offset-plus").on("click", function () {
+        let val = (parseFloat($("#z-offset-value").val()) || 0) + 0.01;
+        val = Math.min(1.0, Math.round(val * 100) / 100);
+        $("#z-offset-value").val(val.toFixed(2));
+        sendZOffset();
+        return false;
+    });
+
+    $("#z-offset-value").on("change", function () {
+        sendZOffset();
     });
 
 });

@@ -1,278 +1,226 @@
 <div class="tab-pane fade{% if configure %} show active{% endif %}" id="home" role="tabpanel"
     aria-labelledby="home-tab">
-    <div class="container fullscreen-emulate" id="vmain">
-        <div class="row g-3">
-            <div class="col-md-12 col-lg-6 col-xl-8">
-                {% if video_supported %}
-                <!-- Video Container -->
-                <div id="vplayer" class="position-relative">
-                    <video class="w-100 d-block rounded-3 bg-body-tertiary" playsinline autoplay muted id="player"
-                        poster="{{ url_for('static', filename='img/load-screen.svg') }}">
-                    </video>
-                    <div class="position-absolute top-0 end-0 p-2 d-flex gap-2 bg-dark bg-opacity-50 rounded-bl-3"
-                        style="border-bottom-left-radius: 0.5rem; z-index: 10;">
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-secondary btn-sm opacity-75" id="light-on" title="Light On">
-                                {{ macro.bi_icon("lightbulb", "Light on") }}
-                            </button>
-                            <button class="btn btn-secondary btn-sm opacity-75" id="light-off" title="Light Off">
-                                {{ macro.bi_icon("lightbulb-off", "Light off") }}
-                            </button>
-                        </div>
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-secondary btn-sm opacity-75" id="quality-low" title="SD Quality">
-                                {{ macro.bi_icon("badge-sd", "SD Quality") }}
-                            </button>
-                            <button class="btn btn-secondary btn-sm opacity-75" id="quality-high" title="HD Quality">
-                                {{ macro.bi_icon("badge-hd", "HD Quality") }}
-                            </button>
-                        </div>
-                    </div>
-                    <button class="btn btn-secondary opacity-50" id="video-fs">
-                        {{ macro.bi_icon("fullscreen") }}
-                    </button>
-                </div>
-                {% else %}
-                <div class="card">
-                    <div class="card-body text-center">
-                        <p class="display-1">
-                            {{ macro.bi_icon("camera-video-off") }}
-                        </p>
-                        <p class="display-6">Camera not available</p>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-            <div class="col-md-12 col-lg-6 col-xl-4">
-                <div class="card">
-                    {% if printer %}
-                    <div class="card-header">
-                        Connection
-                    </div>
-                    <div class="card-body fw-bold">
-                        <div>
-                            {{ printer.name }} ({{ printer.sn }})
-                        </div>
-                        <span id="badge-mqtt" class="badge">MQTT</span>
-                        <span id="badge-pppp" class="badge">PPPP</span>
+    <div class="container-fluid py-3" id="vmain">
+        <div class="eufy-grid">
+            <!-- Left Column: Monitor + Progress -->
+            <div class="eufy-col-left">
+                <!-- Monitor Card -->
+                <div class="eufy-card">
+                    <div class="eufy-card-header">Monitor</div>
+                    <div class="eufy-card-body p-0">
                         {% if video_supported %}
-                        <span id="badge-video" class="badge">VIDEO</span>
+                        <div id="vplayer" class="position-relative">
+                            <video class="w-100 d-block bg-black" playsinline autoplay muted id="player"
+                                poster="{{ url_for('static', filename='img/load-screen.svg') }}">
+                            </video>
+                            <div class="position-absolute top-0 end-0 p-2 d-flex gap-2 eufy-video-overlay"
+                                style="z-index: 10;">
+                                <button class="eufy-icon-btn" id="light-on" title="Light On">
+                                    {{ macro.bi_icon("lightbulb", "Light on") }}
+                                </button>
+                                <button class="eufy-icon-btn" id="light-off" title="Light Off">
+                                    {{ macro.bi_icon("lightbulb-off", "Light off") }}
+                                </button>
+                                <button class="eufy-icon-btn" id="quality-low" title="SD Quality">
+                                    {{ macro.bi_icon("badge-sd", "SD Quality") }}
+                                </button>
+                                <button class="eufy-icon-btn active" id="quality-high" title="HD Quality">
+                                    {{ macro.bi_icon("badge-hd", "HD Quality") }}
+                                </button>
+                            </div>
+                            <button class="eufy-icon-btn eufy-fs-btn" id="video-fs">
+                                {{ macro.bi_icon("fullscreen") }}
+                            </button>
+                        </div>
+                        {% else %}
+                        <div class="eufy-video-placeholder">
+                            <p class="display-4 text-secondary">{{ macro.bi_icon("camera-video-off") }}</p>
+                            <p class="text-secondary">Camera not available</p>
+                        </div>
                         {% endif %}
-                        <span id="badge-ctrl" class="badge">CTRL</span>
                     </div>
-                    {% endif %}
+                    <div class="eufy-card-footer d-flex justify-content-between align-items-center">
+                        <div class="d-flex gap-2">
+                            {% if printer %}
+                            <span id="badge-mqtt" class="eufy-badge">MQTT</span>
+                            <span id="badge-pppp" class="eufy-badge">PPPP</span>
+                            {% if video_supported %}
+                            <span id="badge-video" class="eufy-badge">VIDEO</span>
+                            {% endif %}
+                            <span id="badge-ctrl" class="eufy-badge">CTRL</span>
+                            {% endif %}
+                        </div>
+                        <span id="system-status" class="eufy-status-text">Offline</span>
+                    </div>
+                </div>
 
-                    <div class="card-header fs-6">Temperature</div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="input-group">
-                                    <div class="input-group-text mx-auto" id="nozzleGroup">
-                                        <i class="icon icon-hotend"></i>
+                <!-- Progress Card -->
+                <div class="eufy-card">
+                    <div class="eufy-card-header">Progress</div>
+                    <div class="eufy-card-body">
+                        <div class="d-flex align-items-start gap-3">
+                            <!-- Thumbnail -->
+                            <div class="eufy-thumbnail">
+                                <div class="eufy-thumbnail-placeholder">
+                                    {{ macro.bi_icon("cube", "3D") }}
+                                </div>
+                            </div>
+                            <!-- Time + Progress -->
+                            <div class="flex-grow-1">
+                                <div class="eufy-time-remain" id="time-remain">00:00:00</div>
+                                <div class="eufy-time-label">Time Remaining</div>
+                                <div class="eufy-progress-container mt-2">
+                                    <div class="eufy-progress-pct" id="progress">0%</div>
+                                    <div class="eufy-progress-bar" id="printProgress">
+                                        <div class="eufy-progress-fill" id="progressbar" style="width: 0%"></div>
                                     </div>
-                                    <span id="nozzle-temp" class="form-control text-center"
-                                        title="Current Nozzle Temperature" aria-describedby="nozzleGroup">
-                                        0°C
-                                    </span>
-                                    <button type="button" class="btn btn-secondary" id="set-nozzle-temp"
-                                        name="set-nozzle-temp" class="input-group-text"
-                                        title="Target Nozzle Temperature" aria-label="Target Nozzle Temperature"
-                                        aria-describedby="nozzleGroup" data-bs-toggle="modal"
-                                        data-bs-target="#popupModalInput" data-input-type="number" data-input-min="0"
-                                        data-input-max="260" data-input-icon-class="icon-hotend" data-input-unit="°C"
-                                        disabled>
-                                        0°C
+                                </div>
+                                <!-- Metrics Row -->
+                                <div class="eufy-metrics-row mt-2">
+                                    <div class="eufy-metric">
+                                        <span class="eufy-metric-icon">{{ macro.bi_icon("speedometer") }}</span>
+                                        <span id="print-speed">0mm/s</span>
+                                    </div>
+                                    <div class="eufy-metric">
+                                        <span class="eufy-metric-icon">{{ macro.bi_icon("cloud-arrow-up") }}</span>
+                                        <span id="print-filament">0mm</span>
+                                    </div>
+                                    <div class="eufy-metric">
+                                        <span class="eufy-metric-icon">{{ macro.bi_icon("layers-half") }}</span>
+                                        <span id="print-layer">0/0</span>
+                                    </div>
+                                    <div class="eufy-metric">
+                                        <span class="eufy-metric-icon">{{ macro.bi_icon("clock") }}</span>
+                                        <span id="time-elapsed">00:00:00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Footer: filename + controls -->
+                        <div class="eufy-progress-footer mt-3 pt-2">
+                            <div class="eufy-file-info">
+                                <span id="print-name" class="eufy-file-name"></span>
+                                <span id="print-status-text" class="eufy-file-status"></span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="eufy-btn-stop" id="btn-stop" disabled>
+                                    {{ macro.bi_icon("stop-fill", "Stop") }}
+                                </button>
+                                <button class="eufy-btn-pause" id="btn-pause" disabled>
+                                    {{ macro.bi_icon("pause-fill", "Pause") }}
+                                </button>
+                                <button class="eufy-btn-pause d-none" id="btn-resume" disabled>
+                                    {{ macro.bi_icon("play-fill", "Resume") }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Control + Others -->
+            <div class="eufy-col-right">
+                <!-- Control Card -->
+                <div class="eufy-card">
+                    <div class="eufy-card-header">Control</div>
+                    <div class="eufy-card-body">
+                        <!-- Temperatures -->
+                        <div class="d-flex gap-3 mb-3">
+                            <div class="flex-grow-1 eufy-temp-block" id="nozzleGroup">
+                                <div class="eufy-temp-value" id="nozzle-temp">0°C</div>
+                                <div class="eufy-temp-label">
+                                    Nozzle:<span id="nozzle-target">--</span>°C
+                                    <button class="eufy-icon-btn eufy-temp-edit" id="set-nozzle-temp"
+                                        data-bs-toggle="modal" data-bs-target="#popupModalInput"
+                                        data-input-type="number" data-input-min="0" data-input-max="260"
+                                        data-input-icon-class="icon-hotend" data-input-unit="°C" disabled>
+                                        {{ macro.bi_icon("pencil", "Edit") }}
                                     </button>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="input-group">
-                                    <div class="input-group-text mx-auto" id="bedGroup">
-                                        <i class="icon icon-bed"></i>
-                                    </div>
-                                    <span id="bed-temp" class="form-control text-center" title="Current Bed Temperature"
-                                        aria-describedby="bedGroup">
-                                        0°C
-                                    </span>
-                                    <button type="button" class="btn btn-secondary" id="set-bed-temp"
-                                        name="set-bed-temp" class="input-group-text" title="Target Bed Temperature"
-                                        aria-label="Target Bed Temperature" aria-describedby="bedGroup"
+                            <div class="flex-grow-1 eufy-temp-block" id="bedGroup">
+                                <div class="eufy-temp-value" id="bed-temp">0°C</div>
+                                <div class="eufy-temp-label">
+                                    Heatbed:<span id="bed-target">--</span>°C
+                                    <button class="eufy-icon-btn eufy-temp-edit" id="set-bed-temp"
                                         data-bs-toggle="modal" data-bs-target="#popupModalInput"
                                         data-input-type="number" data-input-min="0" data-input-max="100"
                                         data-input-icon-class="icon-bed" data-input-unit="°C" disabled>
-                                        0°C
+                                        {{ macro.bi_icon("pencil", "Edit") }}
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <div class="row g-3 mt-1">
-                            <div class="col-md-12">
-                                <div class="input-group">
-                                    <div class="input-group-text mx-auto" id="fanGroup" style="width: 44px">
-                                        <i class="icon icon-fan"></i>
-                                    </div>
-                                    <span id="fan-speed" class="form-control text-center text-nowrap"
-                                        title="Current Fan Speed" aria-describedby="fanGroup">
-                                        0%
-                                    </span>
-                                    <button type="button" class="btn btn-secondary text-nowrap" id="set-fan-speed"
-                                        name="set-fan-speed" class="input-group-text" title="Target Fan Speed"
-                                        aria-label="Target Fan Speed" aria-describedby="fanGroup" data-bs-toggle="modal"
-                                        data-bs-target="#popupModalInput" data-input-type="number" data-input-min="0"
-                                        data-input-max="255" data-input-icon-class="icon-fan" data-input-unit=""
-                                        disabled>
-                                        0
-                                    </button>
-                                </div>
+
+                        <div class="eufy-divider"></div>
+
+                        <!-- Extruder -->
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="eufy-extruder-icon">
+                                {{ macro.bi_icon("thermometer-half", "Extruder") }}
                             </div>
-                        </div>
-                        <div class="row mt-3 g-2">
-                            <div class="col-4">
-                                <button class="w-100 btn btn-outline-secondary btn-sm" id="preheat-pla" disabled>
-                                    PLA
-                                </button>
-                            </div>
-                            <div class="col-4">
-                                <button class="w-100 btn btn-outline-secondary btn-sm" id="preheat-petg" disabled>
-                                    PETG
-                                </button>
-                            </div>
-                            <div class="col-4">
-                                <button class="w-100 btn btn-outline-secondary btn-sm" id="preheat-cooldown" disabled>
-                                    Cooldown
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-header fs-6">Extruder</div>
-                    <div class="card-body">
-                        <div class="row g-2 mb-3">
-                            <div class="col-4">
-                                <input type="radio" class="btn-check" name="extrude-len" id="extrude-1"
-                                    autocomplete="off" value="1">
-                                <label class="w-100 btn btn-outline-secondary btn-sm" for="extrude-1">1mm</label>
-                            </div>
-                            <div class="col-4">
-                                <input type="radio" class="btn-check" name="extrude-len" id="extrude-10"
-                                    autocomplete="off" value="10" checked>
-                                <label class="w-100 btn btn-outline-secondary btn-sm" for="extrude-10">10mm</label>
-                            </div>
-                            <div class="col-4">
-                                <input type="radio" class="btn-check" name="extrude-len" id="extrude-50"
-                                    autocomplete="off" value="50">
-                                <label class="w-100 btn btn-outline-secondary btn-sm" for="extrude-50">50mm</label>
-                            </div>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <button class="w-100 btn btn-secondary" id="extrude-btn" disabled>
-                                    Extrude
-                                </button>
-                            </div>
-                            <div class="col-6">
-                                <button class="w-100 btn btn-secondary" id="retract-btn" disabled>
-                                    Retract
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-header fs-6">System Status</div>
-                    <div class="card-body">
-                        <div class="row mb-3 g-3">
-                            <div class="col-12">
-                                <div class="alert alert-secondary text-center fw-bold mb-0" id="system-status"
-                                    role="alert" style="padding: 0.5rem 1rem;">
-                                    Offline
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-header fs-6">Print Progress</div>
-                    <div class="card-body">
-                        <div class="row mb-3 g-3">
-                            <div class="col-12">
-                                <div class="input-group">
-                                    <div class="input-group-text print-info-label" id="printName">Name</div>
-                                    <span id="print-name" class="form-control" title="Print Name"
-                                        aria-describedby="printName">
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row mb-3 g-3">
-                            <div class="col-6">
-                                <div class="input-group">
-                                    <div class="input-group-text print-info-label" id="timeElapsed">
-                                        <i class="icon icon-time-passed"></i>
-                                    </div>
-                                    <span id="time-elapsed" class="form-control text-center" title="Time Elapsed"
-                                        aria-describedby="timeElapsed">
-                                        00:00:00
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="input-group">
-                                    <div class="input-group-text print-info-label" id="timeRemain">
-                                        <i class="icon icon-time-remaining"></i>
-                                    </div>
-                                    <span id="time-remain" class="form-control text-center" title="Time Remaining"
-                                        aria-describedby="timeRemain">
-                                        00:00:00
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row mb-3 g-3">
-                            <div class="col-12">
-                                <div class="progress position-relative" id="printProgress">
-                                    <div class="progress-bar progress-bar-striped progress-bar-animated fs-5"
-                                        role="progressbar" id="progressbar" title="Progress Bar" aria-valuenow="0"
-                                        aria-valuemin="0" aria-valuemax="100" style="width: 0%">
-                                        <span id="progress" class="position-absolute w-100 fw-bold">
-                                            0%
-                                        </span>
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <label class="eufy-label">Length</label>
+                                    <div class="eufy-input-group">
+                                        <input type="number" class="eufy-input" id="extrude-length" value="40" min="1" max="200">
+                                        <span class="eufy-input-unit">mm</span>
                                     </div>
                                 </div>
+                                <div class="d-flex gap-2">
+                                    <button class="eufy-btn-flex" id="retract-btn" disabled>Retract</button>
+                                    <button class="eufy-btn-flex" id="extrude-btn" disabled>Extrude</button>
+                                </div>
                             </div>
                         </div>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="input-group">
-                                    <div class="input-group-text print-info-label" id="printLayer">
-                                        {{ macro.bi_icon("layers-half") }}
-                                    </div>
-                                    <span id="print-layer" class="form-control text-center" title="Print Layers"
-                                        aria-describedby="printLayer">
-                                        0/0
-                                    </span>
-                                </div>
+
+                        <div class="eufy-divider"></div>
+
+                        <!-- Z-Offset -->
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="eufy-label">Z-Offset</label>
+                            <div class="eufy-input-group">
+                                <input type="number" class="eufy-input" id="z-offset-value" value="0.00" step="0.01" min="-1.0" max="1.0">
+                                <span class="eufy-input-unit">mm</span>
                             </div>
-                            <div class="col-md-6">
-                                <div class="input-group">
-                                    <div class="input-group-text print-info-label" id="printSpeed">
-                                        {{ macro.bi_icon("speedometer") }}
-                                    </div>
-                                    <span id="print-speed" class="form-control text-center small" title="Print Speed"
-                                        aria-describedby="printSpeed">
-                                        0mm/s
-                                    </span>
-                                </div>
+                            <button class="eufy-btn-square" id="z-offset-minus" disabled>-</button>
+                            <button class="eufy-btn-square" id="z-offset-plus" disabled>+</button>
+                        </div>
+
+                        <div class="eufy-divider"></div>
+
+                        <!-- Fan + Preheat (compact) -->
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="eufy-label">Fan</label>
+                            <span id="fan-speed" class="eufy-fan-value">0%</span>
+                            <button class="eufy-icon-btn" id="set-fan-speed"
+                                data-bs-toggle="modal" data-bs-target="#popupModalInput"
+                                data-input-type="number" data-input-min="0" data-input-max="255"
+                                data-input-icon-class="icon-fan" data-input-unit="" disabled>
+                                {{ macro.bi_icon("pencil", "Edit") }}
+                            </button>
+                            <div class="ms-auto d-flex gap-1">
+                                <button class="eufy-btn-sm" id="preheat-pla" disabled>PLA</button>
+                                <button class="eufy-btn-sm" id="preheat-petg" disabled>PETG</button>
+                                <button class="eufy-btn-sm" id="preheat-cooldown" disabled>Cool</button>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Debug Console Card -->
-                <div class="card shadow-sm border-secondary mb-3">
-                    <div class="card-header fs-6 d-flex justify-content-between align-items-center">
-                        <div>Debug Console</div>
-                        <button class="btn btn-sm btn-outline-secondary" id="clear-debug-btn" title="Clear Console">
-                            <i class="bi-trash"></i>
-                        </button>
-                    </div>
-                    <div class="card-body p-0">
-                        <textarea id="debug-console" class="form-control" rows="8" readonly
-                            style="font-family: monospace; font-size: 0.85rem; background-color: var(--bs-body-bg); color: var(--bs-body-color); border: none; resize: none;"></textarea>
+
+                <!-- Others Card -->
+                <div class="eufy-card">
+                    <div class="eufy-card-header">Others</div>
+                    <div class="eufy-card-body text-center">
+                        <p class="eufy-muted-text mb-3">Coming soon</p>
+                        <!-- Debug Console (collapsible) -->
+                        <details class="text-start">
+                            <summary class="eufy-muted-text cursor-pointer">Debug Console</summary>
+                            <div class="mt-2 d-flex justify-content-between align-items-center">
+                                <button class="eufy-btn-sm" id="clear-debug-btn">Clear</button>
+                            </div>
+                            <textarea id="debug-console" class="eufy-debug-console" rows="6" readonly></textarea>
+                        </details>
                     </div>
                 </div>
             </div>

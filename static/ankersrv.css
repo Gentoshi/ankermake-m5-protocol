@@ -89,6 +89,11 @@ code {
     height: 40px;
 }
 
+/* EufyStudio overrides old progress bar height */
+.eufy-progress-bar#printProgress {
+    height: 6px;
+}
+
 .icon {
     display: block;
     height: 18px;
@@ -140,4 +145,422 @@ body.fullscreen-emulate-active {
 
 .fullscreen-emulate-d-none-active {
     display: none;
+}
+
+/* EufyStudio Dark Theme */
+
+.eufy-grid {
+    display: grid;
+    grid-template-columns: 6fr 4fr;
+    gap: 16px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+@media (max-width: 992px) {
+    .eufy-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.eufy-col-left,
+.eufy-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.eufy-card {
+    background: #242424;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.eufy-card-header {
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #ffffff;
+    border-bottom: 1px solid #333333;
+}
+
+.eufy-card-body {
+    padding: 16px;
+}
+
+.eufy-card-footer {
+    padding: 10px 16px;
+    border-top: 1px solid #333333;
+    background: #1e1e1e;
+}
+
+.eufy-video-overlay {
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 0 0 0 8px;
+}
+
+.eufy-fs-btn {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+}
+
+.eufy-video-placeholder {
+    aspect-ratio: 4 / 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #1a1a1a;
+}
+
+.eufy-icon-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #ccc;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.eufy-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.eufy-icon-btn.active {
+    background: rgba(76, 175, 80, 0.3);
+    color: #4caf50;
+}
+
+.eufy-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: #333;
+    color: #9e9e9e;
+}
+
+.eufy-badge.online {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+}
+
+.eufy-badge.offline {
+    background: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+}
+
+.eufy-status-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #9e9e9e;
+}
+
+.eufy-status-text.alert-success { color: #4caf50; }
+.eufy-status-text.alert-info { color: #2196f3; }
+.eufy-status-text.alert-danger { color: #f44336; }
+.eufy-status-text.alert-warning { color: #ff9800; }
+
+.eufy-thumbnail {
+    width: 80px;
+    height: 80px;
+    min-width: 80px;
+    background: #2d2d2d;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.eufy-thumbnail-placeholder {
+    font-size: 2rem;
+    color: #4caf50;
+}
+
+.eufy-time-remain {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #4caf50;
+    line-height: 1.2;
+}
+
+.eufy-time-label {
+    font-size: 0.8rem;
+    color: #4caf50;
+    opacity: 0.8;
+}
+
+.eufy-progress-container {
+    position: relative;
+}
+
+.eufy-progress-pct {
+    position: absolute;
+    right: 0;
+    top: -1.2rem;
+    font-size: 0.8rem;
+    color: #9e9e9e;
+}
+
+.eufy-progress-bar {
+    height: 6px;
+    background: #333;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.eufy-progress-fill {
+    height: 100%;
+    background: #4caf50;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.eufy-metrics-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.eufy-metric {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    color: #9e9e9e;
+}
+
+.eufy-metric-icon {
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+.eufy-progress-footer {
+    border-top: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.eufy-file-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.eufy-file-name {
+    font-size: 0.85rem;
+    color: #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+.eufy-file-status {
+    font-size: 0.8rem;
+    color: #4caf50;
+}
+
+.eufy-btn-stop,
+.eufy-btn-pause {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.eufy-btn-stop {
+    background: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+}
+
+.eufy-btn-stop:hover { background: rgba(244, 67, 54, 0.4); }
+.eufy-btn-stop:disabled { opacity: 0.3; cursor: default; }
+
+.eufy-btn-pause {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+}
+
+.eufy-btn-pause:hover { background: rgba(255, 193, 7, 0.4); }
+.eufy-btn-pause:disabled { opacity: 0.3; cursor: default; }
+
+.eufy-temp-block {
+    background: #2d2d2d;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+}
+
+.eufy-temp-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #4caf50;
+}
+
+.eufy-temp-label {
+    font-size: 0.75rem;
+    color: #9e9e9e;
+    margin-top: 4px;
+}
+
+.eufy-temp-edit {
+    padding: 2px 4px;
+    font-size: 0.7rem;
+    margin-left: 4px;
+}
+
+.eufy-divider {
+    border-top: 1px solid #333;
+    margin: 12px 0;
+}
+
+.eufy-extruder-icon {
+    font-size: 2.5rem;
+    color: #555;
+}
+
+.eufy-label {
+    font-size: 0.85rem;
+    color: #9e9e9e;
+    white-space: nowrap;
+}
+
+.eufy-input-group {
+    display: flex;
+    align-items: center;
+    background: #2d2d2d;
+    border: 1px solid #333;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.eufy-input {
+    background: transparent;
+    border: none;
+    color: #fff;
+    padding: 4px 8px;
+    width: 60px;
+    text-align: right;
+    font-size: 0.9rem;
+}
+
+.eufy-input:focus {
+    outline: none;
+}
+
+.eufy-input-unit {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    color: #666;
+    background: #252525;
+}
+
+.eufy-btn-flex {
+    flex: 1;
+    padding: 6px 12px;
+    background: #2d2d2d;
+    border: 1px solid #333;
+    color: #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.eufy-btn-flex:hover { background: #3a3a3a; }
+.eufy-btn-flex:disabled { opacity: 0.4; cursor: default; }
+
+.eufy-btn-square {
+    width: 32px;
+    height: 32px;
+    background: #2d2d2d;
+    border: 1px solid #333;
+    color: #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.eufy-btn-square:hover { background: #3a3a3a; }
+.eufy-btn-square:disabled { opacity: 0.4; cursor: default; }
+
+.eufy-fan-value {
+    font-size: 0.9rem;
+    color: #ccc;
+    min-width: 35px;
+}
+
+.eufy-btn-sm {
+    padding: 3px 10px;
+    background: #2d2d2d;
+    border: 1px solid #333;
+    color: #9e9e9e;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+.eufy-btn-sm:hover { background: #3a3a3a; color: #ccc; }
+.eufy-btn-sm:disabled { opacity: 0.4; cursor: default; }
+
+.eufy-muted-text {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.eufy-debug-console {
+    width: 100%;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #4caf50;
+    font-family: monospace;
+    font-size: 0.8rem;
+    padding: 8px;
+    resize: none;
+}
+
+/* Job completion notification */
+.eufy-job-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: 600;
+    z-index: 9999;
+    animation: eufySlideIn 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.eufy-job-notification.completed {
+    background: #2e7d32;
+}
+
+.eufy-job-notification.stopped {
+    background: #c62828;
+}
+
+@keyframes eufySlideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
 }
