@@ -118,13 +118,10 @@ def pppp_state(sock):
                         sock.send(json.dumps({"status": "connected"}))
                         log.info(f"PPPP connection established")
     except Exception as e:
-        log.exception(f"CRASH IN PPPP_STATE WEBSOCKET: {e}")
+        log.warning(f"PPPP state websocket: {e}")
+
     if not pppp_connected:
-        log.warning(f'[{datetime.now().strftime("%d/%b/%Y %H:%M:%S")}] PPPP connection lost, restarting PPPPService')
-        try:
-            app.svc.get("pppp").worker_start()
-        except TimeoutError:
-            app.svc.get("pppp").restart()
+        log.debug(f"PPPP state websocket: not connected, service will retry automatically")
 
 
 @sock.route("/ws/ctrl")
