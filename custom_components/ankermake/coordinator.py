@@ -47,6 +47,14 @@ class AnkerMakeCoordinator(DataUpdateCoordinator):
             client.connect(server, timeout=10)
             self.clients.append((p.sn, client))
 
+    def _teardown_clients(self):
+        for _, client in self.clients:
+            try:
+                client._mqtt.disconnect()
+            except Exception:
+                pass
+        self.clients = []
+
     def _fetch_all(self):
         """Poll the MQTT client queue for new messages. Runs in executor background thread."""
         if not self.clients:
@@ -54,26 +62,21 @@ class AnkerMakeCoordinator(DataUpdateCoordinator):
 
         for sn, client in self.clients:
             try:
-                # fetch() loops the underlying Paho client for a brief moment
-                # and returns any parsed payload dictionaries from the queue
                 queue = client.fetch(timeout=0.2)
                 for msg, body in queue:
                     for obj in body:
-                        # Extract Extruder/Bed Temperatures
-                        if "currentTemp" in obj:
-                            # 1003 is extruder, 1004 is hotbed
-                            if obj.get("commandType") == 1003: 
-                                self.data[sn]["nozzle_temp"] = obj["currentTemp"] / 100.0
-                            elif obj.get("commandType") == 1004:
-                                self.data[sn]["hotbed_temp"] = obj["currentTemp"] / 100.0
-                        
-                        # Extract progress bar
-                        if "progress" in obj:
+                        cmdtype = obj.get("commandType")
+                        if cmdtype == 1003:
+                            self.data[sn]["nozzle_temp"] = obj["currentTemp"] / 100.0
+                        elif cmdtype == 1004:
+                            self.data[sn]["hotbed_temp"] = obj["currentTemp"] / 100.0
+                        elif "progress" in obj:
                             self.data[sn]["progress"] = obj["progress"]
-                            
+
             except Exception as e:
                 _LOGGER.error(f"Error fetching MQTT for AnkerMake {sn}: {e}")
-        
+                self._teardown_clients()
+
         return self.data
 
     async def _async_update_data(self):

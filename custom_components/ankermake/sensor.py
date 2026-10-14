@@ -49,7 +49,7 @@ class AnkerMakeTempSensor(CoordinatorEntity, SensorEntity):
     def native_value(self):
         """Return the state of the sensor."""
         data = self.coordinator.data.get(self.printer.sn, {})
-        return data.get(self.data_key, 0)
+        return data.get(self.data_key)
 
     @property
     def available(self) -> bool:
@@ -73,7 +73,7 @@ class AnkerMakeProgressSensor(CoordinatorEntity, SensorEntity):
     def native_value(self):
         """Return the state of the sensor."""
         data = self.coordinator.data.get(self.printer.sn, {})
-        return data.get("progress", 0)
+        return data.get("progress")
 
     @property
     def available(self) -> bool:
