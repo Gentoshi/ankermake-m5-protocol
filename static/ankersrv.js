@@ -201,7 +201,7 @@ $(function () {
      * @returns {number} percentage
      */
     function getPercentage(progress) {
-        return Math.round(progress);
+        return Math.round(progress / 100);
     }
 
     /**
