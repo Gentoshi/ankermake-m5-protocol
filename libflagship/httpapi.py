@@ -147,7 +147,6 @@ class AnkerHTTPPassportApiV2(AnkerHTTPApi):
         if captcha_answer is not None:
             data["answer"] = captcha_answer
 
-        print(f"data = {data}")
         # perform the request
         return self._post("/login", headers=headers, data=data)
 
@@ -202,19 +201,20 @@ class AnkerHTTPHubApiV2(AnkerHTTPApi):
 def _find_closest_host(hosts):
     """ get key of closest host in the provided dictionary """
     host_names = list(hosts.values())
-    connect_times = [_measure_host_connect_time(h) for h in host_names]
+    connect_times = []
+    for h in host_names:
+        try:
+            connect_times.append(_measure_host_connect_time(h))
+        except (OSError, socket.timeout):
+            connect_times.append(float("inf"))
     host_index = connect_times.index(min(connect_times))
-    host_name = host_names[host_index]
-
-    # find the key associated with `host_name`
-    host_keys = list(hosts.keys())
-    position = host_names.index(host_name)
-    return host_keys[position]
+    return list(hosts.keys())[host_index]
 
 
-def _measure_host_connect_time(host, port=443):
+def _measure_host_connect_time(host, port=443, timeout=5):
     """ see https://stackoverflow.com/a/6160222 """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(timeout)
         time_before = time.time()
         s.connect((host, port))
         result = time.time() - time_before

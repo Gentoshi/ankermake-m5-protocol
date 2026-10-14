@@ -36,7 +36,7 @@ class CyclicU16(int):
     def __new__(cls, k):
         return int.__new__(cls, cls.trunc(k))
 
-    def __init__(self, k, wrap=0x100):
+    def __init__(self, k, wrap=0x8000):
         self._wrap = wrap
 
     @property
