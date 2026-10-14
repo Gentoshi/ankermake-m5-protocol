@@ -34,7 +34,7 @@ class PPPPService(Service):
         )
 
     def worker_start(self):
-        print("PPPP worker_start BEGIN")
+        log.debug("PPPP worker_start BEGIN")
         config = app.config["config"]
 
         deadline = datetime.now() + timedelta(seconds=15)
@@ -55,7 +55,7 @@ class PPPPService(Service):
             else:
                 api = AnkerPPPPAsyncApi.open_lan(Duid.from_string(printer.p2p_duid), host=printer.ip_addr)
         except Exception as e:
-            print(f"CRASH IN WORKER START PLATFORM: {e}")
+            log.error(f"CRASH IN WORKER START PLATFORM: {e}")
             import traceback; traceback.print_exc()
             raise
         
@@ -68,26 +68,26 @@ class PPPPService(Service):
         log.debug(f"Trying connect to printer {printer.name} ({printer.p2p_duid}) over pppp using ip {printer.ip_addr}")
 
         try:
-            print("PPPPService: Trying connect over pppp")
+            log.debug("PPPPService: Trying connect over pppp")
             api.connect_lan_search()
 
             while api.state != PPPPState.Connected:
                 if datetime.now() > deadline:
-                    print('PPPPService deadline exceeded')
+                    log.error("PPPPService deadline exceeded")
                     raise TimeoutError("Connection timeout")
                 try:
                     msg = api.poll(timeout=0.1)
                 except TimeoutError:
-                    print('PPPPService poll timeout', api.state)
+                    log.debug(f"PPPPService poll timeout, state={api.state}")
                     pass
                 except StopIteration:
-                    print('PPPPService stop iteration')
+                    log.error("PPPPService stop iteration")
                     raise ConnectionRefusedError("Connection rejected by device")
         except Exception as e:
             hint = cli.pppp.pppp_network_error_hint(e)
             if hint:
                 raise ServiceStoppedError(f"Cannot connect to printer {printer.name}: {hint}") from None
-            print(f"CRASH IN WORKER START CONNECT: {e}")
+            log.error(f"CRASH IN WORKER START CONNECT: {e}")
             import traceback; traceback.print_exc()
             raise
 
