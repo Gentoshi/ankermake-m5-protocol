@@ -1,5 +1,6 @@
 import json
 import logging as log
+import time
 
 from datetime import datetime, timedelta
 
@@ -16,9 +17,18 @@ from libflagship.ppppapi import AnkerPPPPAsyncApi, PPPPState
 
 # Minimum number of seconds between automatic searches for the printer IP address
 IP_SEARCH_INTERVAL = 30
+# Restart the service if no packets received within this many seconds
+ALIVE_TIMEOUT = 5
+# Log a heartbeat at this interval (seconds)
+HEARTBEAT_INTERVAL = 60
 
 
 class PPPPService(Service):
+
+    def worker_init(self):
+        self._last_msg_time = None
+        self._connected_since = None
+        self._last_heartbeat = None
 
     def api_command(self, commandType, **kwargs):
         if not hasattr(self, "_api"):
@@ -58,7 +68,7 @@ class PPPPService(Service):
             log.error(f"CRASH IN WORKER START PLATFORM: {e}")
             import traceback; traceback.print_exc()
             raise
-        
+
         if app.config["pppp_dump"]:
             dumpfile = app.config["pppp_dump"]
             log.info(f"Logging all pppp traffic to {dumpfile!r}")
@@ -91,8 +101,10 @@ class PPPPService(Service):
             import traceback; traceback.print_exc()
             raise
 
+        self._last_msg_time = time.monotonic()
+        self._connected_since = time.monotonic()
+        self._last_heartbeat = time.monotonic()
         log.info(f"Successfully connected to printer {printer.name} ({printer.p2p_duid}) over pppp using ip {printer.ip_addr}")
-        log.info("Established pppp connection")
         self._api = api
 
     def _search_ip_addr(self):
@@ -139,51 +151,81 @@ class PPPPService(Service):
         try:
             msg = self._api.poll(timeout=timeout)
         except ConnectionResetError:
+            log.warning(f"{self.name}: Connection reset by printer, restarting")
             raise ServiceRestartSignal()
 
-        if not msg:
-            return
+        now = time.monotonic()
 
-        if msg.type != Type.DRW:
-            # forward messages other than Type.DRW without further processing
-            self.notify((getattr(msg, "chan", None), msg))
-            return
-
-        ch = self._api.chans[msg.chan]
-
-        with ch.lock:
-            data = ch.peek(16, timeout=0)
-            if not data:
+        if msg:
+            self._last_msg_time = now
+            if msg.type != Type.DRW:
+                self.notify((getattr(msg, "chan", None), msg))
                 return
 
-            if data[:4] == b'XZYH':
-                hdr = ch.peek(16, timeout=0)
-                if not hdr:
+            ch = self._api.chans[msg.chan]
+
+            with ch.lock:
+                data = ch.peek(16, timeout=0)
+                if not data:
                     return
 
-                xzyh = Xzyh.parse(hdr)[0]
-                data = ch.read(xzyh.len + 16, timeout=0)
-                if not data:
-                    return None
+                if data[:4] == b'XZYH':
+                    hdr = ch.peek(16, timeout=0)
+                    if not hdr:
+                        return
 
-                xzyh.data = data[16:]
-                self.notify((msg.chan, xzyh))
-            elif data[:2] == b'\xAA\xBB':
-                aabb, data = self._recv_aabb(ch)
-                if len(data) != 1:
-                    raise ValueError(f"Unexpected reply from aabb request: {data}")
+                    xzyh = Xzyh.parse(hdr)[0]
+                    data = ch.read(xzyh.len + 16, timeout=0)
+                    if not data:
+                        return None
 
-                aabb.data = data
-                self.notify((msg.chan, aabb))
-            else:
-                raise ValueError(f"Unexpected data in stream: {data!r}")
+                    xzyh.data = data[16:]
+                    self.notify((msg.chan, xzyh))
+                elif data[:2] == b'\xAA\xBB':
+                    aabb, data = self._recv_aabb(ch)
+                    if len(data) != 1:
+                        raise ValueError(f"Unexpected reply from aabb request: {data}")
+
+                    aabb.data = data
+                    self.notify((msg.chan, aabb))
+                else:
+                    raise ValueError(f"Unexpected data in stream: {data!r}")
+        else:
+            # No message received - check alive timeout
+            if self._last_msg_time and (now - self._last_msg_time) > ALIVE_TIMEOUT:
+                log.warning(f"{self.name}: No packets received for {ALIVE_TIMEOUT}s, "
+                            f"assuming connection lost. Restarting.")
+                raise ServiceRestartSignal()
+
+        # Heartbeat log
+        if self._last_heartbeat and (now - self._last_heartbeat) >= HEARTBEAT_INTERVAL:
+            self._last_heartbeat = now
+            uptime = now - self._connected_since if self._connected_since else 0
+            msg_age = now - self._last_msg_time if self._last_msg_time else -1
+            log.info(f"{self.name}: Connected for {uptime:.0f}s, last packet {msg_age:.1f}s ago")
 
     def worker_stop(self):
-        self._api.send(PktClose())
+        log.info(f"{self.name}: Disconnecting from printer")
+        try:
+            self._api.send(PktClose())
+        except Exception:
+            pass
         del self._api
+        self._last_msg_time = None
+        self._connected_since = None
+        self._last_heartbeat = None
 
     @property
     def connected(self):
         if not hasattr(self, "_api"):
             return False
         return self._api.state == PPPPState.Connected
+
+    @property
+    def health(self):
+        now = time.monotonic()
+        return {
+            "connected": self.connected,
+            "last_msg_age": (now - self._last_msg_time) if self._last_msg_time else None,
+            "uptime": (now - self._connected_since) if self._connected_since else None,
+        }

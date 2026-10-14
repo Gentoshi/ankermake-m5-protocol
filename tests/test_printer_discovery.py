@@ -9,6 +9,7 @@ import errno
 import os
 import sys
 import tempfile
+import time
 import unittest
 
 from datetime import datetime
@@ -27,7 +28,7 @@ import web
 import web.config
 import web.service.pppp
 
-from libflagship.ppppapi import AnkerPPPPBaseApi
+from libflagship.ppppapi import AnkerPPPPBaseApi, PPPPState
 
 PRINTER_DUID = "EUPRAKM-001234-ABCDE"
 PRINTER_IP = "192.0.2.10"
@@ -197,6 +198,47 @@ class PrinterDiscoveryTest(unittest.TestCase):
 
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(self.ip_addr(), "")
+
+    def test_pppp_health_reports_connected(self):
+        svc = web.service.pppp.PPPPService()
+        svc._api = mock.MagicMock()
+        svc._api.state = PPPPState.Connected
+        svc._last_msg_time = time.monotonic()
+        svc._connected_since = time.monotonic()
+
+        health = svc.health
+
+        self.assertTrue(health["connected"])
+        self.assertIsNotNone(health["last_msg_age"])
+        self.assertLess(health["last_msg_age"], 1.0)
+        self.assertIsNotNone(health["uptime"])
+
+    def test_mqtt_health_reports_disconnected(self):
+        svc = web.service.mqtt.MqttQueue()
+        svc._connected_since = time.monotonic() - 60
+        svc._disconnected_since = time.monotonic() - 5
+        svc.client = mock.MagicMock()
+        svc.client._connected = False
+
+        health = svc.health
+
+        self.assertFalse(health["connected"])
+        self.assertIsNotNone(health["disconnected_for"])
+        self.assertGreater(health["disconnected_for"], 4.0)
+
+    def test_video_health_reports_frame_age(self):
+        svc = web.service.video.VideoQueue()
+        svc._last_frame_time = time.monotonic() - 2
+        svc._connected_since = time.monotonic() - 60
+        svc.pppp = mock.MagicMock()
+        svc.pppp.connected = True
+
+        health = svc.health
+
+        self.assertTrue(health["connected"])
+        self.assertIsNotNone(health["last_frame_age"])
+        self.assertGreater(health["last_frame_age"], 1.5)
+        self.assertLess(health["last_frame_age"], 3.0)
 
 
 if __name__ == "__main__":

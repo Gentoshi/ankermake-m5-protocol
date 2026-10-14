@@ -503,20 +503,23 @@ def app_api_ankerctl_status() -> dict:
     Returns:
         A dictionary containing the keys 'status', possible_states and 'services'
         status = 'ok' == some service is online, 'error' == no service is online
-        services = {svc_name: {online: bool, state: str, state_value: int}}
+        services = {svc_name: {online: bool, state: str, state_value: int, health: dict}}
         possible_states = {state_name: state_value}
         version = {api: str, server: str, text: str}
     """
     def get_svc_status(svc):
-        # NOTE: Some services might not update their state on stop, so we can't rely on it to be 100% accurate
         state = svc.state
-        if state == RunState.Running:
-            return {'online': True, 'state': state.name, 'state_value': state.value}
-        return {'online': False, 'state': state.name, 'state_value': state.value}
+        online = state == RunState.Running
+        result = {'online': online, 'state': state.name, 'state_value': state.value}
+        if hasattr(svc, "health"):
+            try:
+                result["health"] = svc.health
+            except Exception:
+                result["health"] = None
+        return result
 
     svcs_status = {svc_name: get_svc_status(svc) for svc_name, svc in app.svc.svcs.items()}
 
-    # If any service is online, the status is 'ok'
     ok = any([svc['online'] for svc_name, svc in svcs_status.items()])
 
     return {
