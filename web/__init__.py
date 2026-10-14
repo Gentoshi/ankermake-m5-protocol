@@ -255,13 +255,23 @@ def app_api_ankerctl_config_update_ip_addresses():
     url = url_for("app_root")
     config = app.config["config"]
 
+    is_xhr = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
     try:
         found_printers, updated_printers = web.config.printer_discovery.search(config)
     except OSError as err:
-        # On macOS, sending the broadcast fails while the Local Network
-        # privacy prompt is pending or after access was denied.
         log.warning(f"Printer search failed: {err}")
+        if is_xhr:
+            return jsonify({"found": False, "message": web.config.search_error_message(err)})
         return web.util.flash_redirect(url, web.config.search_error_message(err), "danger")
+
+    if is_xhr:
+        if found_printers and updated_printers:
+            with config.open() as cfg:
+                ip = cfg.printers[app.config["printer_index"]].ip_addr
+            return jsonify({"found": True, "ip": ip})
+        return jsonify({"found": False, "message": "No printers responded within timeout. "
+                                                   "Are you connected to the same network as the printer?"})
 
     if found_printers:
         # determine the message to display to the user
@@ -281,6 +291,37 @@ def app_api_ankerctl_config_update_ip_addresses():
                   "Are you connected to the same network as the printer?"
 
     return web.util.flash_redirect(url, message, category)
+
+
+@app.post("/api/ankerctl/config/setip")
+def app_api_ankerctl_config_set_ip():
+    """
+    Sets the printer IP address manually.
+
+    Returns:
+        A redirect to the internal reload with a success message,
+        or a redirect to the root with an error message.
+    """
+    import ipaddress
+
+    ip = request.form.get("ip", "").strip()
+
+    try:
+        ipaddress.IPv4Address(ip)
+    except (ipaddress.AddressValueError, ValueError):
+        return web.util.flash_redirect(url_for('app_root'),
+                                       f"Invalid IP address: {ip!r}", "danger")
+
+    config = app.config["config"]
+    printer_index = app.config["printer_index"]
+
+    with config.modify() as cfg:
+        if not cfg or printer_index >= len(cfg.printers):
+            return web.util.flash_redirect(url_for('app_root'),
+                                           "No printer configured", "danger")
+        cfg.printers[printer_index].ip_addr = ip
+
+    return app_api_ankerctl_server_internal_reload(f"Printer IP set to {ip}")
 
 
 

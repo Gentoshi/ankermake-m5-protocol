@@ -144,6 +144,60 @@ class PrinterDiscoveryTest(unittest.TestCase):
         self.assertEqual([category for category, _ in flashes], ["warning"])
         self.assertIn("Local Network", flashes[0][1])
 
+    def test_updateip_xhr_returns_json_when_found(self):
+        client = web.app.test_client()
+        with printers_answer((PRINTER_DUID, PRINTER_IP)):
+            resp = client.post("/api/ankerctl/config/updateip",
+                               headers={"X-Requested-With": "XMLHttpRequest"})
+
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertTrue(data["found"])
+        self.assertEqual(data["ip"], PRINTER_IP)
+
+    def test_updateip_xhr_returns_json_when_not_found(self):
+        client = web.app.test_client()
+        with printers_answer():
+            resp = client.post("/api/ankerctl/config/updateip",
+                               headers={"X-Requested-With": "XMLHttpRequest"})
+
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertFalse(data["found"])
+        self.assertIn("message", data)
+
+    def test_updateip_xhr_returns_json_on_network_error(self):
+        client = web.app.test_client()
+        with broadcast_fails(errno.ENETDOWN):
+            resp = client.post("/api/ankerctl/config/updateip",
+                               headers={"X-Requested-With": "XMLHttpRequest"})
+
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertFalse(data["found"])
+        self.assertIn("message", data)
+
+    def test_setip_valid_ip_updates_config(self):
+        client = web.app.test_client()
+        resp = client.post("/api/ankerctl/config/setip", data={"ip": "10.0.0.5"})
+
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(self.ip_addr(), "10.0.0.5")
+
+    def test_setip_invalid_ip_shows_error(self):
+        client = web.app.test_client()
+        resp = client.post("/api/ankerctl/config/setip", data={"ip": "not-an-ip"})
+
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(self.ip_addr(), "")
+
+    def test_setip_empty_ip_shows_error(self):
+        client = web.app.test_client()
+        resp = client.post("/api/ankerctl/config/setip", data={"ip": ""})
+
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(self.ip_addr(), "")
+
 
 if __name__ == "__main__":
     unittest.main()
