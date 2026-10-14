@@ -21,28 +21,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     def _init_ankermake():
         from libflagship.httpapi import AnkerHTTPPassportApiV2, AnkerHTTPAppApiV1
+        from libflagship.logincache import guess_region
         from cli.model import Account, Printer
         from libflagship.megajank import pppp_decode_initstring
         from libflagship.util import unhex
         from datetime import datetime
-        
-        # 1. Login synchronously
-        ppapi = AnkerHTTPPassportApiV2(region=country.lower(), verify=True)
+
+        region = guess_region(country)
+
+        ppapi = AnkerHTTPPassportApiV2(region=region, verify=True)
         login_res = ppapi.login(email, password)
         auth_token = login_res["auth_token"]
-        
-        # 2. Fetch profile data and printers
-        appapi = AnkerHTTPAppApiV1(auth_token=auth_token, region=country.lower(), verify=True)
+
+        appapi = AnkerHTTPAppApiV1(auth_token=auth_token, region=region, verify=True)
         printers_data = appapi.query_fdm_list()
-        
+
         account = Account(
             auth_token=auth_token,
-            region=country.lower(),
-            user_id="ha_user",
+            region=region,
+            user_id=login_res.get("user_id", ""),
             email=email,
             country=country,
-            mqtt_username=login_res["mqtt"]["username"],
-            mqtt_password=login_res["mqtt"]["password"]
         )
         
         # 3. Create Printer objects

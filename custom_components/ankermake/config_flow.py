@@ -31,7 +31,8 @@ class AnkerMakeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             email = user_input[CONF_EMAIL]
             password = user_input[CONF_PASSWORD]
-            region = user_input[CONF_COUNTRY].lower()
+            from libflagship.logincache import guess_region
+            region = guess_region(user_input[CONF_COUNTRY])
 
             try:
                 # We must run synchronous HTTP requests in an executor to avoid blocking HA
