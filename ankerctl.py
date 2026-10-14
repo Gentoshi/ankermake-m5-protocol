@@ -69,11 +69,13 @@ pass_env = click.make_pass_decorator(Environment)
 @click.option("--insecure", "-k", is_flag=True, help="Disable TLS certificate validation")
 @click.option("--verbose", "-v", count=True, help="Increase verbosity")
 @click.option("--quiet", "-q", count=True, help="Decrease verbosity")
-@click.option("--printer", "-p", type=int, default=environ.get('PRINTER_INDEX') or 0, help="Select printer number")
+@click.option("--printer", "-p", type=int, default=None, help="Select printer number")
 @click.pass_context
 def main(ctx, pppp_dump, verbose, quiet, insecure, printer):
     ctx.ensure_object(Environment)
     env = ctx.obj
+    if printer is None:
+        printer = int(environ.get('PRINTER_INDEX', 0))
     levels = {
         -3: log.CRITICAL,
         -2: log.ERROR,
@@ -260,7 +262,7 @@ def pppp_print_file(env, file, no_act):
     api = cli.pppp.pppp_open(env.config, env.printer_index, dumpfile=env.pppp_dump)
 
     data = file.read()
-    fui = FileUploadInfo.from_file(file.name, user_name="ankerctl", user_id="-", machine_id="-")
+    fui = FileUploadInfo.from_data(data, file.name, user_name="ankerctl", user_id="-", machine_id="-")
     log.info(f"Going to upload {fui.size} bytes as {fui.name!r}")
     try:
         cli.pppp.pppp_send_file(api, fui, data)
@@ -419,14 +421,19 @@ def config_login(env, country, email, password):
         if captcha["id"]:
             log.warning(f"Login requires solving a captcha")
             import tempfile
-            with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
-                f.write(f'<html><body><h2>Please solve this captcha and enter the result in your terminal:</h2><br><img src="{captcha["img"]}"></body></html>')
-                tmp_url = "file://" + f.name.replace("\\", "/")
-            if webbrowser.open(tmp_url, new=2):
-                captcha["answer"] = input("Please enter the captcha answer: ").strip()
-            else:
-                log.critical(f"Cannot open webbrowser for displaying captcha, aborting.")
-                tries = 0
+            import os
+            tmp = tempfile.NamedTemporaryFile("w", delete=False, suffix=".html")
+            tmp.write(f'<html><body><h2>Please solve this captcha and enter the result in your terminal:</h2><br><img src="{captcha["img"]}"></body></html>')
+            tmp.close()
+            tmp_url = "file://" + tmp.name.replace("\\", "/")
+            try:
+                if webbrowser.open(tmp_url, new=2):
+                    captcha["answer"] = input("Please enter the captcha answer: ").strip()
+                else:
+                    log.critical(f"Cannot open webbrowser for displaying captcha, aborting.")
+                    tries = 0
+            finally:
+                os.unlink(tmp.name)
         else:
             log.critical(f"Unknown login error: {E}")
             tries = 0
