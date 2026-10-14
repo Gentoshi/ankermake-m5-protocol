@@ -236,7 +236,7 @@ def app_api_version():
     Returns:
         A dictionary containing version details of api and server
     """
-    return {"api": "0.1", "server": "1.0.0", "text": "ankerctl 1.0.0"}
+    return {"api": "0.1", "server": "1.9.0", "text": "OctoPrint 1.9.0"}
 
 
 @app.post("/api/ankerctl/config/updateip")
