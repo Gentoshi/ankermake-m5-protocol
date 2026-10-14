@@ -5,7 +5,7 @@ import contextlib
 from enum import Enum
 from threading import Thread, Event
 from datetime import datetime, timedelta
-from multiprocessing import Queue
+from queue import Queue
 from queue import Empty
 
 
@@ -206,7 +206,8 @@ class Service(Thread):
         finally:
             self.handlers.remove(handler)
 
-    def await_ready(self):
+    def await_ready(self, timeout=30):
+        deadline = datetime.now() + timedelta(seconds=timeout)
         while True:
             log.debug(f"{self.name}: Awaiting ready ({self.state})")
             if not (self.running and self.wanted):
@@ -215,6 +216,9 @@ class Service(Thread):
             if self.state == RunState.Running:
                 log.debug(f"{self.name}: Ready")
                 return True
+
+            if datetime.now() > deadline:
+                raise TimeoutError(f"{self.name}: Timed out waiting for ready after {timeout}s")
 
             self.idle(timeout=0.4)
 
@@ -363,7 +367,7 @@ class ServiceManager:
                         try:
                             yield queue.get(timeout=timeout)
                         except Empty:
-                            yield None, None
+                            yield None
         except (EOFError, OSError, ServiceStoppedError) as e:
             log.exception(f"ServiceManager stream {name} handled error: {e}")
             return
