@@ -489,41 +489,42 @@ $(function () {
                     }
                 }
             } else if (data.commandType == 1000) {
-                // Returns Notice / Error State
+                // Returns Notice / Error State (value: 0=Idle, 1=Printing, 2=Finished, 3=Error, 4=Wait extrude, 5=Extruding)
+                const notice = data.value;
                 let m = "Offline";
-                switch (data.notice) {
+                switch (notice) {
                     case 0: m = "Idle"; break;
                     case 1: m = "Printing"; break;
                     case 2: m = "Finished"; break;
                     case 3: m = "Error state"; break;
                     case 4: m = "Wait for extrude"; break;
                     case 5: m = "Extruding"; break;
-                    default: m = "Unknown: " + data.notice;
+                    default: m = "Unknown: " + notice;
                 }
                 const statEl = $("#system-status");
                 statEl.text(m);
 
                 // Color formatting
                 statEl.removeClass("alert-secondary alert-success alert-warning alert-danger alert-info");
-                if (data.notice === 1) statEl.addClass("alert-success");
-                else if (data.notice === 2) statEl.addClass("alert-info");
-                else if (data.notice === 3) statEl.addClass("alert-danger");
-                else if (data.notice === 4 || data.notice === 5) statEl.addClass("alert-warning");
+                if (notice === 1) statEl.addClass("alert-success");
+                else if (notice === 2) statEl.addClass("alert-info");
+                else if (notice === 3) statEl.addClass("alert-danger");
+                else if (notice === 4 || notice === 5) statEl.addClass("alert-warning");
                 else statEl.addClass("alert-secondary");
 
                 // Update print status text + button visibility
                 $("#print-status-text").text(m === "Printing" ? "| Printing" : m === "Finished" ? "| Completed" : m === "Error state" ? "| Stopped" : "");
-                const isPrinting = data.notice === 1;
-                const isPaused = data.notice === 2 && lastNotice === 1;
+                const isPrinting = notice === 1;
+                const isPaused = notice === 2 && lastNotice === 1;
                 $("#btn-pause").toggleClass("d-none", !isPrinting);
-                $("#btn-resume").toggleClass("d-none", isPrinting || data.notice !== 2);
-                $("#btn-stop").prop("disabled", data.notice === 0);
+                $("#btn-resume").toggleClass("d-none", isPrinting || notice !== 2);
+                $("#btn-stop").prop("disabled", notice === 0);
 
                 // Job completion detection
-                if (lastNotice === 1 && (data.notice === 2 || data.notice === 3)) {
-                    showJobNotification(data.notice === 2 ? "completed" : "stopped");
+                if (lastNotice === 1 && (notice === 2 || notice === 3)) {
+                    showJobNotification(notice === 2 ? "completed" : "stopped");
                 }
-                lastNotice = data.notice;
+                lastNotice = notice;
 
             } else if (data.commandType == 1007 || data.commandType == 1008 || data.commandType == 1009) {
                 // Silently sink high-frequency time elapsed/remaining broadcast loops to avoid Console flooding

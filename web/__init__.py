@@ -80,6 +80,8 @@ def mqtt(sock):
     online = mq.state == RunState.Running if mq else False
     sock.send(json.dumps({"status": "connected" if online else "disconnected"}))
     for data in app.svc.stream("mqttqueue"):
+        if isinstance(data, dict) and data.get("commandType") in (1008, 1001):
+            log.info(f"MQTT reply: {json.dumps(data)}")
         log.debug(f"MQTT message: {data}")
         sock.send(json.dumps(data))
 
@@ -543,21 +545,25 @@ def send_printer_command(payload: dict):
     return True, None
 
 
-PRINT_CONTROL_VALUES = {"pause": 1, "resume": 2, "stop": 3}
+PRINT_CONTROL_GCODE = {
+    "pause": "M600",
+    "resume": "M601",
+    "stop": "M112",
+}
 
 
 @app.post("/api/commands/print")
 def api_print_control():
     data = request.get_json(force=True)
     action = data.get("action", "").lower()
-    if action not in PRINT_CONTROL_VALUES:
-        return jsonify({"error": f"Invalid action. Use: {list(PRINT_CONTROL_VALUES.keys())}"}), 400
-    value = PRINT_CONTROL_VALUES[action]
-    log.info(f"Print control: {action} (value={value})")
-    ok, err = send_printer_command({"commandType": 1008, "value": value})
+    if action not in PRINT_CONTROL_GCODE:
+        return jsonify({"error": f"Invalid action. Use: {list(PRINT_CONTROL_GCODE.keys())}"}), 400
+    gcode = PRINT_CONTROL_GCODE[action]
+    log.info(f"Print control: {action} (gcode={gcode})")
+    ok, err = send_printer_command({"commandType": 1043, "cmdData": gcode, "cmdLen": len(gcode)})
     if err:
         return jsonify({"error": err}), 503
-    return jsonify({"ok": True, "action": action, "value": value})
+    return jsonify({"ok": True, "action": action, "gcode": gcode})
 
 
 @app.post("/api/commands/temperature")

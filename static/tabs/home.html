@@ -6,31 +6,34 @@
             <div class="eufy-col-left">
                 <!-- Monitor Card -->
                 <div class="eufy-card">
-                    <div class="eufy-card-header">Monitor</div>
+                    <div class="eufy-card-header d-flex justify-content-between align-items-center">
+                        <span>Monitor</span>
+                        {% if video_supported %}
+                        <div class="d-flex gap-1">
+                            <button class="eufy-icon-btn" id="light-on" title="Light On">
+                                {{ macro.bi_icon("lightbulb", "Light on") }}
+                            </button>
+                            <button class="eufy-icon-btn" id="light-off" title="Light Off">
+                                {{ macro.bi_icon("lightbulb-off", "Light off") }}
+                            </button>
+                            <button class="eufy-icon-btn" id="quality-low" title="SD Quality">
+                                {{ macro.bi_icon("badge-sd", "SD Quality") }}
+                            </button>
+                            <button class="eufy-icon-btn active" id="quality-high" title="HD Quality">
+                                {{ macro.bi_icon("badge-hd", "HD Quality") }}
+                            </button>
+                            <button class="eufy-icon-btn" id="video-fs" title="Fullscreen">
+                                {{ macro.bi_icon("fullscreen") }}
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
                     <div class="eufy-card-body p-0">
                         {% if video_supported %}
                         <div id="vplayer" class="position-relative">
                             <video class="w-100 d-block bg-black" playsinline autoplay muted id="player"
                                 poster="{{ url_for('static', filename='img/load-screen.svg') }}">
                             </video>
-                            <div class="position-absolute top-0 end-0 p-2 d-flex gap-2 eufy-video-overlay"
-                                style="z-index: 10;">
-                                <button class="eufy-icon-btn" id="light-on" title="Light On">
-                                    {{ macro.bi_icon("lightbulb", "Light on") }}
-                                </button>
-                                <button class="eufy-icon-btn" id="light-off" title="Light Off">
-                                    {{ macro.bi_icon("lightbulb-off", "Light off") }}
-                                </button>
-                                <button class="eufy-icon-btn" id="quality-low" title="SD Quality">
-                                    {{ macro.bi_icon("badge-sd", "SD Quality") }}
-                                </button>
-                                <button class="eufy-icon-btn active" id="quality-high" title="HD Quality">
-                                    {{ macro.bi_icon("badge-hd", "HD Quality") }}
-                                </button>
-                            </div>
-                            <button class="eufy-icon-btn eufy-fs-btn" id="video-fs">
-                                {{ macro.bi_icon("fullscreen") }}
-                            </button>
                         </div>
                         {% else %}
                         <div class="eufy-video-placeholder">
@@ -104,13 +107,13 @@
                             </div>
                             <div class="d-flex gap-2">
                                 <button class="eufy-btn-stop" id="btn-stop" disabled>
-                                    {{ macro.bi_icon("stop-fill", "Stop") }}
+                                    {{ macro.bi_icon("stop-fill") }}
                                 </button>
                                 <button class="eufy-btn-pause" id="btn-pause" disabled>
-                                    {{ macro.bi_icon("pause-fill", "Pause") }}
+                                    {{ macro.bi_icon("pause-fill") }}
                                 </button>
                                 <button class="eufy-btn-pause d-none" id="btn-resume" disabled>
-                                    {{ macro.bi_icon("play-fill", "Resume") }}
+                                    {{ macro.bi_icon("play-fill") }}
                                 </button>
                             </div>
                         </div>
@@ -208,19 +211,11 @@
                     </div>
                 </div>
 
-                <!-- Others Card -->
+                <!-- Logs Card -->
                 <div class="eufy-card">
-                    <div class="eufy-card-header">Others</div>
-                    <div class="eufy-card-body text-center">
-                        <p class="eufy-muted-text mb-3">Coming soon</p>
-                        <!-- Debug Console (collapsible) -->
-                        <details class="text-start">
-                            <summary class="eufy-muted-text cursor-pointer">Debug Console</summary>
-                            <div class="mt-2 d-flex justify-content-between align-items-center">
-                                <button class="eufy-btn-sm" id="clear-debug-btn">Clear</button>
-                            </div>
-                            <textarea id="debug-console" class="eufy-debug-console" rows="6" readonly></textarea>
-                        </details>
+                    <div class="eufy-card-header">Logs</div>
+                    <div class="eufy-card-body">
+                        <textarea id="debug-console" class="eufy-debug-console" rows="8" readonly></textarea>
                     </div>
                 </div>
             </div>
