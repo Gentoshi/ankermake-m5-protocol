@@ -101,10 +101,7 @@
                         </div>
                         <!-- Footer: filename + controls -->
                         <div class="eufy-progress-footer mt-3 pt-2">
-                            <div class="eufy-file-info">
-                                <span id="print-name" class="eufy-file-name"></span>
-                                <span id="print-status-text" class="eufy-file-status"></span>
-                            </div>
+                            <span id="print-name" class="eufy-file-name flex-grow-1"></span>
                             <div class="d-flex gap-2">
                                 <button class="eufy-btn-stop" id="btn-stop" disabled>
                                     {{ macro.bi_icon("stop-fill") }}
@@ -129,29 +126,25 @@
                     <div class="eufy-card-body">
                         <!-- Temperatures -->
                         <div class="d-flex gap-3 mb-3">
-                            <div class="flex-grow-1 eufy-temp-block" id="nozzleGroup">
+                            <div class="eufy-temp-box" id="nozzleGroup">
                                 <div class="eufy-temp-value" id="nozzle-temp">0°C</div>
-                                <div class="eufy-temp-label">
-                                    Nozzle:<span id="nozzle-target">--</span>°C
-                                    <button class="eufy-icon-btn eufy-temp-edit" id="set-nozzle-temp"
-                                        data-bs-toggle="modal" data-bs-target="#popupModalInput"
-                                        data-input-type="number" data-input-min="0" data-input-max="260"
-                                        data-input-icon-class="icon-hotend" data-input-unit="°C" disabled>
-                                        {{ macro.bi_icon("pencil", "Edit") }}
-                                    </button>
-                                </div>
+                                <div class="eufy-temp-target">Nozzle: <span id="nozzle-target">--</span>°C</div>
+                                <button class="eufy-icon-btn" id="set-nozzle-temp"
+                                    data-bs-toggle="modal" data-bs-target="#popupModalInput"
+                                    data-input-type="number" data-input-min="0" data-input-max="260"
+                                    data-input-icon-class="icon-hotend" data-input-unit="°C" disabled>
+                                    {{ macro.bi_icon("pencil") }}
+                                </button>
                             </div>
-                            <div class="flex-grow-1 eufy-temp-block" id="bedGroup">
+                            <div class="eufy-temp-box" id="bedGroup">
                                 <div class="eufy-temp-value" id="bed-temp">0°C</div>
-                                <div class="eufy-temp-label">
-                                    Heatbed:<span id="bed-target">--</span>°C
-                                    <button class="eufy-icon-btn eufy-temp-edit" id="set-bed-temp"
-                                        data-bs-toggle="modal" data-bs-target="#popupModalInput"
-                                        data-input-type="number" data-input-min="0" data-input-max="100"
-                                        data-input-icon-class="icon-bed" data-input-unit="°C" disabled>
-                                        {{ macro.bi_icon("pencil", "Edit") }}
-                                    </button>
-                                </div>
+                                <div class="eufy-temp-target">Heatbed: <span id="bed-target">--</span>°C</div>
+                                <button class="eufy-icon-btn" id="set-bed-temp"
+                                    data-bs-toggle="modal" data-bs-target="#popupModalInput"
+                                    data-input-type="number" data-input-min="0" data-input-max="100"
+                                    data-input-icon-class="icon-bed" data-input-unit="°C" disabled>
+                                    {{ macro.bi_icon("pencil") }}
+                                </button>
                             </div>
                         </div>
 

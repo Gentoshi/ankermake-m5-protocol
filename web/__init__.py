@@ -544,9 +544,9 @@ def send_printer_command(payload: dict):
 
 
 PRINT_CONTROL_GCODE = {
-    "pause": "M600",
-    "resume": "M601",
-    "stop": "M112",
+    "pause": ["M25"],
+    "resume": ["M275 S1"],
+    "stop": ["M104 S0", "M140 S0", "M84"],
 }
 
 
@@ -556,12 +556,13 @@ def api_print_control():
     action = data.get("action", "").lower()
     if action not in PRINT_CONTROL_GCODE:
         return jsonify({"error": f"Invalid action. Use: {list(PRINT_CONTROL_GCODE.keys())}"}), 400
-    gcode = PRINT_CONTROL_GCODE[action]
-    log.info(f"Print control: {action} (gcode={gcode})")
-    ok, err = send_printer_command({"commandType": 1043, "cmdData": gcode, "cmdLen": len(gcode)})
-    if err:
-        return jsonify({"error": err}), 503
-    return jsonify({"ok": True, "action": action, "gcode": gcode})
+    gcodes = PRINT_CONTROL_GCODE[action]
+    log.info(f"Print control: {action} (gcode={gcodes})")
+    for gcode in gcodes:
+        ok, err = send_printer_command({"commandType": 1043, "cmdData": gcode, "cmdLen": len(gcode)})
+        if err:
+            return jsonify({"error": err}), 503
+    return jsonify({"ok": True, "action": action, "gcode": gcodes})
 
 
 @app.post("/api/commands/temperature")

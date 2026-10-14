@@ -458,7 +458,6 @@ $(function () {
                     const target = getTemp(data.targetTemp);
                     if (!isNaN(target)) {
                         $("#nozzle-target").text(target);
-                        $("#set-nozzle-temp").text(`${target}°C`);
                     }
                 }
             } else if (data.commandType == 1004) {
@@ -469,7 +468,6 @@ $(function () {
                     const target = getTemp(data.targetTemp);
                     if (!isNaN(target)) {
                         $("#bed-target").text(target);
-                        $("#set-bed-temp").text(`${target}°C`);
                     }
                 }
             } else if (data.commandType == 1006) {
@@ -518,8 +516,7 @@ $(function () {
                 else if (notice === 4 || notice === 5) statEl.addClass("alert-warning");
                 else statEl.addClass("alert-secondary");
 
-                // Update print status text + button visibility
-                $("#print-status-text").text(m === "Printing" ? "| Printing" : m === "Finished" ? "| Completed" : m === "Error state" ? "| Stopped" : "");
+                // Update button visibility
                 const isPrinting = notice === 1;
                 const isPaused = notice === 2 && lastNotice === 1;
                 $("#btn-pause").toggleClass("d-none", !isPrinting);
@@ -542,7 +539,6 @@ $(function () {
 
         close: function (ws) {
             $("#print-name").text("");
-            $("#print-status-text").text("");
             $("#time-elapsed").text("00:00:00");
             $("#time-remain").text("00:00:00");
             $("#progressbar").attr("aria-valuenow", 0);
@@ -551,14 +547,11 @@ $(function () {
             $("#print-filament").text("0mm");
             $("#nozzle-temp").text("0°C");
             $("#nozzle-target").text("--");
-            $("#set-nozzle-temp").text("0°C");
             $("#bed-temp").text("0°C");
             $("#bed-target").text("--");
-            $("#set-bed-temp").text("0°C");
             $("#print-speed").text("0mm/s");
             $("#print-layer").text("0 / 0");
             $("#fan-speed").text("0%");
-            $("#set-fan-speed").text("0");
             $("#system-status").text("Offline").removeClass("alert-success alert-warning alert-danger alert-info").addClass("alert-secondary");
             $("#btn-pause").addClass("d-none");
             $("#btn-resume").addClass("d-none");
