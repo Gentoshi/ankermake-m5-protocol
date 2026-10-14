@@ -20,7 +20,10 @@ class FileTransferService(Service):
 
     def api_aabb_request(self, api, frametype, msg=b"", pos=0):
         self.api_aabb(api, frametype, msg, pos)
-        resp = self._tap.get()
+        try:
+            resp = self._tap.get(timeout=30)
+        except Exception:
+            raise TimeoutError(f"Aabb request timed out (type={frametype}, pos={pos})")
         reply_code = resp.data[0] if resp.data else -1
         try:
             reply = FileTransferReply(reply_code)
@@ -47,7 +50,8 @@ class FileTransferService(Service):
             api.send_xzyh(str(uuid.uuid4())[:16].encode(), cmd=P2PCmdType.P2P_SEND_FILE)
 
             log.info(f"Sending file metadata.. ({len(bytes(fui)) + 1} bytes)")
-            self.api_aabb(api, FileTransfer.BEGIN, bytes(fui) + b"\x00")
+            self.api_aabb_request(api, FileTransfer.BEGIN, bytes(fui) + b"\x00")
+            log.info(f"{self.name}: BEGIN acknowledged")
 
             log.info("Sending file contents..")
             blocksize = 1024 * 32
