@@ -50,9 +50,9 @@ import cli.countrycodes
 
 
 app = Flask(__name__, root_path=ROOT_DIR, static_folder="static", template_folder="static")
-# secret_key is required for flash() to function
-app.secret_key = token(24)
 app.config.from_prefixed_env()
+if not app.secret_key:
+    app.secret_key = token(24)
 app.svc = ServiceManager()
 
 sock = Sock(app)
@@ -204,8 +204,11 @@ def app_root():
             printer = None
             country = ""
 
-        if ":" in request.host:
-            request_host, request_port = request.host.split(":", 1)
+        if request.host.startswith("["):
+            request_host, request_port = request.host.split("]:", 1)
+            request_host = request_host[1:] + "]"
+        elif ":" in request.host:
+            request_host, request_port = request.host.rsplit(":", 1)
         else:
             request_host = request.host
             request_port = "80"
@@ -232,7 +235,7 @@ def app_api_version():
     Returns:
         A dictionary containing version details of api and server
     """
-    return {"api": "0.1", "server": "1.9.0", "text": "OctoPrint 1.9.0"}
+    return {"api": "0.1", "server": "1.0.0", "text": "ankerctl 1.0.0"}
 
 
 @app.post("/api/ankerctl/config/updateip")
