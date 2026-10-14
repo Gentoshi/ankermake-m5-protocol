@@ -27,13 +27,26 @@ def flash_redirect(path: str, message: str | None = None, category="info"):
 
 
 def upload_file_to_printer(app, file):
-    """ This function uploads a file to the printer.
+    """ This function uploads a file to the printer and starts the print.
 
     Args:
         - app (object): The application object.
-        - file (file-like object): The file to be uploaded to the printer.
+        - file (file-like object): The file to upload to the printer.
     """
+    import logging as log
+
+    from web.lib.service import RunState
+
     user_name = request.headers.get("User-Agent", "ankerctl").split("/")[0]
 
     with app.svc.borrow("filetransfer") as ft:
         ft.send_file(file, user_name)
+
+    log.info(f"File upload complete, sending print start command for {file.filename!r}")
+    mq = app.svc.svcs.get("mqttqueue")
+    if mq and mq.state == RunState.Running:
+        with app.svc.borrow("mqttqueue") as mq:
+            mq.client.command({"commandType": 1001, "name": file.filename})
+            log.info("Print start command sent")
+    else:
+        log.warning("MQTT not available, cannot send print start command")
