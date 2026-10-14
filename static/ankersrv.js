@@ -5,6 +5,52 @@ $(function () {
     $("#copyYear").text(new Date().getFullYear());
 
     /**
+     * Poll service status and update the header badge
+     */
+    function fmtDuration(s) {
+        if (s == null) return "?";
+        if (s < 60) return `${Math.round(s)}s`;
+        if (s < 3600) return `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`;
+        return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+    }
+
+    function updateSvcStatus() {
+        fetch("/api/ankerctl/status")
+        .then(r => r.json())
+        .then(data => {
+            const el = $("#svc-status");
+            const svcs = data.services || {};
+            const parts = [];
+            let allUp = true;
+            for (const [name, svc] of Object.entries(svcs)) {
+                const h = svc.health;
+                if (!svc.online) {
+                    allUp = false;
+                    parts.push(`${name}: off`);
+                } else if (h && h.connected === false) {
+                    allUp = false;
+                    parts.push(`${name}: disconnected`);
+                } else if (h && h.last_msg_age != null && h.last_msg_age > 5) {
+                    allUp = false;
+                    parts.push(`${name}: stale (${h.last_msg_age.toFixed(0)}s)`);
+                } else if (h && h.uptime != null) {
+                    parts.push(`${name}: ${fmtDuration(h.uptime)}`);
+                } else {
+                    parts.push(`${name}: up`);
+                }
+            }
+            const text = parts.join("  |  ") || "no services";
+            el.text(text);
+            el.attr("title", text);
+            el.removeClass("text-bg-success text-bg-warning text-bg-danger text-bg-secondary");
+            el.addClass(allUp ? "text-bg-success" : "text-bg-warning");
+        })
+        .catch(() => {});
+    }
+    updateSvcStatus();
+    setInterval(updateSvcStatus, 5000);
+
+    /**
      * Handle modal for progress bar being shown
      */
     var popupModalDom = document.getElementById("popupModal");
