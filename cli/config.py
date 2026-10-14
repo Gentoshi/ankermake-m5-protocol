@@ -66,7 +66,8 @@ class BaseConfigManager:
         if not path.exists():
             return default
 
-        return json.load(path.open(), object_hook=self._load_json)
+        with path.open() as f:
+            return json.load(f, object_hook=self._load_json)
 
     def save(self, name, value):
         path = self.config_path(name)
@@ -213,7 +214,7 @@ def update_empty_printer_ips(config, printer_ips):
                 printer.ip_addr = printer_ips[printer.sn]
 
 
-def update_printer_ip_addresses(config, printer_ips: list) -> list:
+def update_printer_ip_addresses(config, printer_ips: dict) -> list:
     """
     Checks configured printer IP addresses against the given set of addresses
     and updates the IP address in the configuration if they differ.
@@ -246,7 +247,8 @@ def update_printer_ip_addresses(config, printer_ips: list) -> list:
 
 def attempt_config_upgrade(config, profile, insecure):
     path = config.config_path("default")
-    data = json.load(path.open())
+    with path.open() as f:
+        data = json.load(f)
     cfg = load_config_from_api(
         data["account"]["auth_token"],
         data["account"]["region"],
