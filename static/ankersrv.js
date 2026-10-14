@@ -570,10 +570,24 @@ $(function () {
         },
     });
 
+    function setQualityBtn(mode) {
+        const low = $("#quality-low"), high = $("#quality-high");
+        low.removeClass("btn-primary").addClass("btn-secondary opacity-75");
+        high.removeClass("btn-primary").addClass("btn-secondary opacity-75");
+        if (mode === 1) high.removeClass("btn-secondary opacity-75").addClass("btn-primary");
+        else if (mode === 0) low.removeClass("btn-secondary opacity-75").addClass("btn-primary");
+    }
+
     sockets.ctrl = new AutoWebSocket({
         name: "Control socket",
         url: `${location.protocol.replace('http', 'ws')}//${location.host}/ws/ctrl`,
         badge: "#badge-ctrl",
+        opened: function (event) {
+            const data = JSON.parse(event.data);
+            if (data.video_mode !== null && data.video_mode !== undefined) {
+                setQualityBtn(data.video_mode);
+            }
+        },
     });
 
     sockets.pppp_state = new AutoWebSocket({
@@ -626,6 +640,7 @@ $(function () {
     $("#quality-low").on("click", function () {
         logDebug("Command Dispatched: Video Quality LOW");
         sockets.ctrl.ws.send(JSON.stringify({ quality: 0 }));
+        setQualityBtn(0);
         return false;
     });
 
@@ -635,6 +650,7 @@ $(function () {
     $("#quality-high").on("click", function () {
         logDebug("Command Dispatched: Video Quality HIGH");
         sockets.ctrl.ws.send(JSON.stringify({ quality: 1 }));
+        setQualityBtn(1);
         return false;
     });
 

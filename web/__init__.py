@@ -135,8 +135,9 @@ def ctrl(sock):
     if not app.config["login"]:
         return
 
-    # send a response on connect, to let the client know the connection is ready
-    sock.send(json.dumps({"ankerctl": 1}))
+    vq = app.svc.svcs.get("videoqueue")
+    video_mode = vq.saved_video_mode if vq else None
+    sock.send(json.dumps({"ankerctl": 1, "video_mode": video_mode}))
 
     while True:
         msg = json.loads(sock.receive())
