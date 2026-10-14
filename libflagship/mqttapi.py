@@ -112,7 +112,7 @@ class AnkerMQTTBaseClient:
             m6=5,
             m7=ord('F'),
             packet_type=packet_type,
-            packet_num=0,
+            packet_num=packet_num,
             time=0,
             device_guid=guid,
             padding=b'', # fixed by .pack()
